@@ -1,10 +1,10 @@
-name: Test Real-Time Game Capture
+name: YouTube Live Test
 
 on:
   workflow_dispatch:
 
 jobs:
-  test:
+  stream:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,13 +28,11 @@ jobs:
             +render \
             -noreset &
 
-          echo $! > xvfb.pid
           sleep 3
 
       - name: Start game server
         run: |
           python3 -m http.server 8080 > server.log 2>&1 &
-          echo $! > server.pid
           sleep 3
 
       - name: Start Chromium
@@ -45,7 +43,6 @@ jobs:
             --no-sandbox \
             --disable-dev-shm-usage \
             --disable-gpu \
-            --disable-software-rasterizer \
             --window-size=1280,720 \
             --start-maximized \
             --no-first-run \
@@ -56,51 +53,25 @@ jobs:
             http://127.0.0.1:8080 \
             > chromium.log 2>&1 &
 
-          echo $! > chromium.pid
           sleep 5
 
-      - name: Record real-time game
+      - name: Start YouTube Live
         env:
           DISPLAY: :99
+          YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
           ffmpeg \
-            -y \
             -f x11grab \
             -video_size 1280x720 \
             -framerate 30 \
             -i :99.0 \
-            -t 30 \
             -c:v libx264 \
             -preset veryfast \
+            -b:v 2500k \
+            -maxrate 2500k \
+            -bufsize 5000k \
             -pix_fmt yuv420p \
-            -r 30 \
-            game-realtime.mp4
-
-      - name: Check video
-        run: |
-          echo "===== VIDEO ====="
-          ls -lh game-realtime.mp4
-
-          ffprobe \
-            -v error \
-            -show_entries \
-            format=duration,size \
-            -show_entries \
-            stream=width,height,r_frame_rate \
-            -of default=noprint_wrappers=1 \
-            game-realtime.mp4
-
-      - name: Upload real-time video
-        uses: actions/upload-artifact@v4
-        with:
-          name: game-realtime-video
-          path: game-realtime.mp4
-
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: capture-logs
-          path: |
-            chromium.log
-            server.log
+            -g 60 \
+            -f flv \
+            "rtmps://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}" \
+            2>&1 | tee youtube.log
