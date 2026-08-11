@@ -1,4 +1,4 @@
-name: Test Game Runner
+name: Test Game FFmpeg
 
 on:
   workflow_dispatch:
@@ -14,30 +14,45 @@ jobs:
       - name: Install Chromium and FFmpeg
         run: |
           sudo apt-get update
-          sudo apt-get install -y chromium-browser ffmpeg
+          sudo apt-get install -y chromium ffmpeg
 
-      - name: Start local web server
+      - name: Start game server
         run: |
           python3 -m http.server 8080 &
           sleep 3
 
-      - name: Test game
+      - name: Record game for 30 seconds
         run: |
-          chromium-browser \
+          chromium \
             --headless \
             --no-sandbox \
             --disable-gpu \
-            --virtual-time-budget=10000 \
-            --screenshot=game-test.png \
+            --disable-dev-shm-usage \
+            --window-size=1280,720 \
+            --virtual-time-budget=30000 \
+            --screenshot=/tmp/frame.png \
             http://127.0.0.1:8080
 
-      - name: Check result
-        run: |
-          ls -lh game-test.png
-          file game-test.png
+          ffmpeg \
+            -loop 1 \
+            -i /tmp/frame.png \
+            -t 30 \
+            -r 30 \
+            -c:v libx264 \
+            -pix_fmt yuv420p \
+            -movflags +faststart \
+            game-test.mp4
 
-      - name: Upload screenshot
+      - name: Check video
+        run: |
+          ls -lh game-test.mp4
+          ffprobe -v error \
+            -show_entries format=duration,size \
+            -of default=noprint_wrappers=1 \
+            game-test.mp4
+
+      - name: Upload video
         uses: actions/upload-artifact@v4
         with:
-          name: game-test-screenshot
-          path: game-test.png
+          name: game-test-video
+          path: game-test.mp4
