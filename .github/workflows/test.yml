@@ -1,4 +1,4 @@
-name: Test Game FFmpeg
+name: Test Real-Time Game Capture
 
 on:
   workflow_dispatch:
@@ -11,66 +11,96 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Chromium and FFmpeg
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y chromium ffmpeg
+          sudo apt-get install -y \
+            chromium \
+            ffmpeg \
+            xvfb
+
+      - name: Start virtual display
+        run: |
+          Xvfb :99 \
+            -screen 0 1280x720x24 \
+            -ac \
+            +extension GLX \
+            +render \
+            -noreset &
+
+          echo $! > xvfb.pid
+          sleep 3
 
       - name: Start game server
         run: |
-          python3 -m http.server 8080 &
+          python3 -m http.server 8080 > server.log 2>&1 &
+          echo $! > server.pid
           sleep 3
 
-      - name: Render game
+      - name: Start Chromium
+        env:
+          DISPLAY: :99
         run: |
           chromium \
-            --headless \
             --no-sandbox \
-            --disable-gpu \
             --disable-dev-shm-usage \
+            --disable-gpu \
+            --disable-software-rasterizer \
             --window-size=1280,720 \
-            --screenshot=frame.png \
-            --virtual-time-budget=30000 \
-            http://127.0.0.1:8080
+            --start-maximized \
+            --no-first-run \
+            --no-default-browser-check \
+            --disable-background-timer-throttling \
+            --disable-backgrounding-occluded-windows \
+            --disable-renderer-backgrounding \
+            http://127.0.0.1:8080 \
+            > chromium.log 2>&1 &
 
-          echo "Checking screenshot..."
-          ls -lh frame.png
-          file frame.png
+          echo $! > chromium.pid
+          sleep 5
 
-      - name: Create 30 second video
+      - name: Record real-time game
+        env:
+          DISPLAY: :99
         run: |
           ffmpeg \
             -y \
-            -loop 1 \
-            -i frame.png \
+            -f x11grab \
+            -video_size 1280x720 \
+            -framerate 30 \
+            -i :99.0 \
             -t 30 \
-            -r 30 \
-            -vf "scale=1280:720,format=yuv420p" \
             -c:v libx264 \
             -preset veryfast \
             -pix_fmt yuv420p \
-            -movflags +faststart \
-            game-test.mp4
+            -r 30 \
+            game-realtime.mp4
 
       - name: Check video
         run: |
-          echo "Video information:"
-          ls -lh game-test.mp4
+          echo "===== VIDEO ====="
+          ls -lh game-realtime.mp4
 
           ffprobe \
             -v error \
-            -show_entries format=duration,size \
+            -show_entries \
+            format=duration,size \
+            -show_entries \
+            stream=width,height,r_frame_rate \
             -of default=noprint_wrappers=1 \
-            game-test.mp4
+            game-realtime.mp4
 
-      - name: Upload screenshot
+      - name: Upload real-time video
         uses: actions/upload-artifact@v4
         with:
-          name: game-test-screenshot
-          path: frame.png
+          name: game-realtime-video
+          path: game-realtime.mp4
 
-      - name: Upload video
+      - name: Upload logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: game-test-video
-          path: game-test.mp4
+          name: capture-logs
+          path: |
+            chromium.log
+            server.log
