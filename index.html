@@ -1,52 +1,18 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cloud Stream Test</title>
-<style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111;font-family:Arial,sans-serif}
-canvas{display:block;width:100vw;height:100vh}
-</style>
-</head>
-<body>
-<canvas id="game" width="1280" height="720"></canvas>
+<html><head><meta charset="utf-8"><title>Cloud Arcade Live</title>
+<style>html,body{margin:0;overflow:hidden;background:#101522}canvas{display:block;width:1280px;height:720px}</style>
+</head><body><canvas id="g" width="1280" height="720"></canvas>
 <script>
-const c=document.getElementById("game"),ctx=c.getContext("2d");
-let x=180,y=360,vx=7,vy=5,score=0,t=0;
-function draw(){
-  t++;
-  x+=vx;y+=vy;
-  if(x<35||x>1245){vx*=-1;score++}
-  if(y<35||y>685){vy*=-1;score++}
-
-  let g=ctx.createLinearGradient(0,0,1280,720);
-  g.addColorStop(0,"#101a3a");g.addColorStop(1,"#24102e");
-  ctx.fillStyle=g;ctx.fillRect(0,0,1280,720);
-
-  for(let i=0;i<20;i++){
-    let sx=(i*83+t*.25)%1280, sy=(i*47)%720;
-    ctx.fillStyle="rgba(255,255,255,.12)";
-    ctx.beginPath();ctx.arc(sx,sy,2+(i%3),0,Math.PI*2);ctx.fill();
-  }
-
-  ctx.strokeStyle="rgba(255,255,255,.25)";
-  ctx.lineWidth=4;ctx.strokeRect(30,30,1220,660);
-
-  let glow=ctx.createRadialGradient(x,y,2,x,y,45);
-  glow.addColorStop(0,"white");glow.addColorStop(.25,"#72e6ff");glow.addColorStop(1,"rgba(0,180,255,0)");
-  ctx.fillStyle=glow;ctx.beginPath();ctx.arc(x,y,45,0,Math.PI*2);ctx.fill();
-
-  ctx.fillStyle="#62d9ff";ctx.beginPath();ctx.arc(x,y,18,0,Math.PI*2);ctx.fill();
-
-  ctx.fillStyle="white";ctx.textAlign="center";
-  ctx.font="bold 42px Arial";ctx.fillText("CLOUD STREAM TEST",640,105);
-  ctx.font="24px Arial";ctx.fillText("GitHub Actions → Chromium → FFmpeg → YouTube",640,145);
-  ctx.font="bold 30px Arial";ctx.fillText("SCORE  "+score,640,640);
-  ctx.font="18px Arial";ctx.fillText("Automatic test game • no user input required",640,675);
-  requestAnimationFrame(draw);
-}
-draw();
-</script>
-</body>
-</html>
+const c=document.getElementById('g'),x=c.getContext('2d');let t=0;
+const b=[...Array(18)].map((_,i)=>({a:i*Math.PI*2/18,r:190+(i%4)*28,s:.5+i%5*.12}));
+function f(){t+=1/60;x.fillStyle='#101522';x.fillRect(0,0,1280,720);
+b.forEach((q,i)=>{let a=q.a+t*q.s,px=640+Math.cos(a)*q.r,py=360+Math.sin(a)*q.r;
+x.beginPath();x.arc(px,py,10+(i%3)*3,0,7);x.fillStyle=i%2?'#55d6ff':'#ffd447';x.fill()});
+x.beginPath();x.arc(640,360,210,0,7);x.strokeStyle='#fff';x.lineWidth=5;x.stroke();
+let a=t,px=640+Math.cos(a)*105,py=360+Math.sin(a)*105;
+x.beginPath();x.arc(px,py,34,0,7);x.fillStyle='#ff5b6e';x.fill();
+x.fillStyle='#fff';x.font='bold 42px Arial';x.textAlign='center';x.fillText('CLOUD ARCADE LIVE',640,72);
+x.font='bold 28px Arial';x.fillText('Score: '+Math.floor(t*10),640,665);
+x.font='20px Arial';x.fillStyle='#aebbd0';x.fillText('GitHub Actions • FFmpeg • YouTube',640,700);
+requestAnimationFrame(f)}f();
+</script></body></html>
