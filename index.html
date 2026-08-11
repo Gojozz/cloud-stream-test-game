@@ -1,18 +1,127 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Cloud Arcade Live</title>
-<style>html,body{margin:0;overflow:hidden;background:#101522}canvas{display:block;width:1280px;height:720px}</style>
-</head><body><canvas id="g" width="1280" height="720"></canvas>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cloud Arcade Live — Animal Chaos Arena</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050914;font-family:Arial,sans-serif;color:#fff}
+#app{position:relative;width:100vw;height:100vh;max-width:1280px;max-height:720px;margin:auto;overflow:hidden;background:radial-gradient(circle,#17385b,#071122 68%,#040811)}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+.panel{position:absolute;background:#071323e8;border:1px solid #31516b;border-radius:14px;box-shadow:0 7px 24px #0009;z-index:5}
+.top{position:absolute;left:2%;right:2%;top:2.5%;display:flex;justify-content:space-between;align-items:center;z-index:6}
+.logo{font-size:27px;font-weight:900;letter-spacing:2px;text-shadow:0 0 15px #2bd5ff}.logo b{color:#42dfff}
+.live{padding:7px 12px;border-radius:20px;background:#081728;border:1px solid #38556d;font-size:13px;font-weight:900}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#38ff7d;box-shadow:0 0 10px #38ff7d;margin-right:6px}
+.scores{left:2%;top:17%;width:18%;padding:8px}.chat{right:2%;top:17%;width:18%;padding:10px}
+.score{display:flex;align-items:center;gap:7px;padding:7px;margin:5px 0;background:#0b1b2c;border-radius:9px;font-size:12px}
+.face{font-size:21px}.name{font-weight:900;flex:1}.pts{font-weight:900;font-size:16px}
+.chat h3{font-size:15px;color:#63e3ff;margin:0 0 7px}.msg{font-size:11px;padding:6px;margin:5px 0;background:#0b1c2d;border-left:2px solid #43d8ff;border-radius:6px}
+.center{position:absolute;left:50%;top:14%;transform:translateX(-50%);font-size:12px;font-weight:900;letter-spacing:2px;z-index:4;color:#d8f8ff}
+.bottom{left:25%;right:25%;bottom:2.5%;padding:8px;text-align:center;z-index:6}.event{font-weight:900;font-size:14px;color:#ffd34d}.sub{font-size:10px;color:#91a9bd;margin-top:3px}
+.flash{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);font-size:48px;font-weight:1000;text-shadow:0 0 25px #ffcb39;opacity:0;z-index:10;pointer-events:none;transition:.15s}
+@media(max-width:800px){#app{aspect-ratio:16/9;height:auto}.logo{font-size:17px}.scores,.chat{width:19%;top:18%}.score{padding:4px}.face{font-size:15px}.name{font-size:10px}.pts{font-size:12px}.chat h3{font-size:10px}.msg{font-size:8px;padding:4px}.bottom{left:25%;right:25%}.event{font-size:9px}}
+</style>
+</head>
+<body><div id="app"><canvas id="game"></canvas>
+<div class="top"><div class="logo">CLOUD <b>ARCADE</b> LIVE</div><div class="live"><span class="dot"></span>LIVE BATTLE</div></div>
+<div class="center">ANIMAL CHAOS ARENA</div>
+<div class="panel scores">
+ <div class="score"><span class="face">🐰</span><span class="name">BUNNY</span><span class="pts" id="s0">000</span></div>
+ <div class="score"><span class="face">🐿️</span><span class="name">NUTTY</span><span class="pts" id="s1">000</span></div>
+ <div class="score"><span class="face">🐔</span><span class="name">CHICK</span><span class="pts" id="s2">000</span></div>
+</div>
+<div class="panel chat"><h3>💬 LIVE CHAT</h3>
+ <div class="msg">BUNNY GO! 🐰</div><div class="msg">NUTTY GET COINS!</div><div class="msg">CHICK FLY! 🐔</div><div class="msg" id="chat">🔥 CHAOS!</div>
+</div>
+<div class="flash" id="flash">⚡ POWER!</div>
+<div class="panel bottom"><div class="event">NEXT EVENT: <span id="event">COIN RUSH</span> — <span id="timer">12</span>s</div><div class="sub">LIVE CHAT COMMANDS • BATTLE NEVER STOPS</div></div>
+</div>
 <script>
-const c=document.getElementById('g'),x=c.getContext('2d');let t=0;
-const b=[...Array(18)].map((_,i)=>({a:i*Math.PI*2/18,r:190+(i%4)*28,s:.5+i%5*.12}));
-function f(){t+=1/60;x.fillStyle='#101522';x.fillRect(0,0,1280,720);
-b.forEach((q,i)=>{let a=q.a+t*q.s,px=640+Math.cos(a)*q.r,py=360+Math.sin(a)*q.r;
-x.beginPath();x.arc(px,py,10+(i%3)*3,0,7);x.fillStyle=i%2?'#55d6ff':'#ffd447';x.fill()});
-x.beginPath();x.arc(640,360,210,0,7);x.strokeStyle='#fff';x.lineWidth=5;x.stroke();
-let a=t,px=640+Math.cos(a)*105,py=360+Math.sin(a)*105;
-x.beginPath();x.arc(px,py,34,0,7);x.fillStyle='#ff5b6e';x.fill();
-x.fillStyle='#fff';x.font='bold 42px Arial';x.textAlign='center';x.fillText('CLOUD ARCADE LIVE',640,72);
-x.font='bold 28px Arial';x.fillText('Score: '+Math.floor(t*10),640,665);
-x.font='20px Arial';x.fillStyle='#aebbd0';x.fillText('GitHub Actions • FFmpeg • YouTube',640,700);
-requestAnimationFrame(f)}f();
+const c=document.getElementById('game'),x=c.getContext('2d');let W,H,D=1;
+function size(){D=Math.min(devicePixelRatio||1,2);W=c.clientWidth;H=c.clientHeight;c.width=W*D;c.height=H*D;x.setTransform(D,0,0,D,0,0)}addEventListener('resize',size);size();
+
+const colors=['#43d8ff','#ffd447','#ff5b67'],names=['BUNNY','NUTTY','CHICK'];
+const a={x:.5,y:.57,r:.27};
+const chars=[
+{x:.42,y:.58,vx:.001,vy:0,jump:0,score:0,phase:0},
+{x:.53,y:.62,vx:-.0012,vy:0,jump:0,score:0,phase:2},
+{x:.59,y:.54,vx:.0008,vy:0,jump:0,score:0,phase:4}
+];
+let coins=[],sparks=[],tick=0;
+function arena(){return{x:W*a.x,y:H*a.y,r:Math.min(W,H)*a.r}}
+function coin(){let A=arena(),q=Math.random()*6.28,r=Math.sqrt(Math.random())*A.r*.82;coins.push({x:A.x+Math.cos(q)*r,y:A.y+Math.sin(q)*r,r:5+Math.random()*3})}
+for(let i=0;i<28;i++)coin();
+function burst(px,py,col){for(let i=0;i<14;i++){let q=Math.random()*6.28,s=.0015+Math.random()*.004;sparks.push({x:px,y:py,vx:Math.cos(q)*s,vy:Math.sin(q)*s,l:1,c:col})}}
+function drawAnimal(q,i,t){
+ let px=q.x*W,py=q.y*H, lift=q.jump>0?Math.sin(q.jump*Math.PI)*25:0, col=colors[i];
+ x.save();x.translate(px,py-lift);x.shadowBlur=18;x.shadowColor=col;
+ // shadow
+ x.shadowBlur=0;x.fillStyle='rgba(0,0,0,.35)';x.beginPath();x.ellipse(0,32+lift,25*(1-q.jump*.3),7,0,0,7);x.fill();
+ x.shadowBlur=18;x.shadowColor=col;
+ if(i===0){ // bunny
+   x.fillStyle='#dcecff';x.beginPath();x.ellipse(0,3,28,25,0,0,7);x.fill();
+   x.fillStyle='#dcecff';x.beginPath();x.ellipse(-13,-27,8,22,-.15,0,7);x.ellipse(13,-27,8,22,.15,0,7);x.fill();
+   x.fillStyle='#ff9bb4';x.beginPath();x.ellipse(-13,-28,3,14,-.15,0,7);x.ellipse(13,-28,3,14,.15,0,7);x.fill();
+ } else if(i===1){ // squirrel
+   x.fillStyle='#b96b31';x.beginPath();x.arc(0,3,27,0,7);x.fill();
+   x.strokeStyle='#d9914c';x.lineWidth=12;x.beginPath();x.arc(21,-18,25,2.8,6.1);x.stroke();
+   x.fillStyle='#e6a05d';x.beginPath();x.arc(0,-20,17,0,7);x.fill();
+   x.beginPath();x.moveTo(0,-20);x.lineTo(27,-14);x.lineTo(5,-4);x.fill();
+ } else { // chicken
+   x.fillStyle='#fff8e8';x.beginPath();x.ellipse(0,5,29,24,0,0,7);x.fill();
+   x.fillStyle='#fff8e8';x.beginPath();x.arc(0,-21,20,0,7);x.fill();
+   x.fillStyle='#e94343';x.beginPath();x.arc(-6,-39,5,0,7);x.arc(4,-41,6,0,7);x.arc(13,-37,5,0,7);x.fill();
+   x.fillStyle='#ffb52e';x.beginPath();x.moveTo(17,-18);x.lineTo(34,-13);x.lineTo(17,-7);x.fill();
+   if(q.jump>0){x.strokeStyle='#fff';x.lineWidth=8;x.beginPath();x.moveTo(-20,2);x.lineTo(-38,-7);x.moveTo(20,2);x.lineTo(38,-7);x.stroke()}
+ }
+ x.shadowBlur=0;x.fillStyle='#fff';x.beginPath();x.arc(-8,-15,6,0,7);x.arc(8,-15,6,0,7);x.fill();
+ x.fillStyle='#111827';x.beginPath();x.arc(-7,-15,2.5,0,7);x.arc(9,-15,2.5,0,7);x.fill();
+ x.font='900 12px Arial';x.textAlign='center';x.fillStyle='#fff';x.fillText(names[i],0,48);
+ x.restore();
+}
+function loop(t){tick++;
+ x.fillStyle='#061022';x.fillRect(0,0,W,H);
+ for(let i=0;i<45;i++){let px=(i*113+t*.008*(i%4+1))%W,py=(i*61)%H;x.fillStyle='rgba(70,190,255,.18)';x.beginPath();x.arc(px,py,1+(i%2),0,7);x.fill()}
+ let A=arena(),g=x.createRadialGradient(A.x,A.y,5,A.x,A.y,A.r*1.4);g.addColorStop(0,'#1b4a70');g.addColorStop(1,'#07132600');x.fillStyle=g;x.beginPath();x.arc(A.x,A.y,A.r*1.5,0,7);x.fill();
+ x.strokeStyle='#48cfff';x.lineWidth=5;x.shadowBlur=20;x.shadowColor='#27cfff';x.beginPath();x.arc(A.x,A.y,A.r,0,7);x.stroke();x.shadowBlur=0;
+ // moving rings
+ x.strokeStyle='rgba(100,220,255,.18)';x.lineWidth=2;for(let k=1;k<4;k++){x.beginPath();x.arc(A.x,A.y,A.r*k/4+(tick%120)/120*8,0,7);x.stroke()}
+ coins.forEach((o,i)=>{let p=1+Math.sin(t*.006+i)*.15;x.fillStyle='#ffd447';x.shadowBlur=15;x.shadowColor='#ffd447';x.beginPath();x.arc(o.x,o.y,o.r*p,0,7);x.fill();x.shadowBlur=0});
+ if(coins.length<30&&Math.random()<.04)coin();
+
+ chars.forEach((q,i)=>{
+   let target=coins.length?coins[i%coins.length]:null;
+   // distinct behavior
+   if(i===0){ // bunny: jump and dash toward coin
+     if(target){q.vx+=(target.x/W-q.x)*.000018;q.vy+=(target.y/H-q.y)*.000018}
+     if(tick%170===i*35)q.jump=1;
+   } else if(i===1){ // squirrel: fastest coin hunter
+     if(target){q.vx+=(target.x/W-q.x)*.000026;q.vy+=(target.y/H-q.y)*.000026}
+     if(tick%240===70)q.jump=1;
+   } else { // chicken: patrol + periodic flight
+     q.vx+=Math.sin(t*.001)*.000006;
+     q.vy+=Math.cos(t*.0012)*.000006;
+     if(tick%210===30)q.jump=1;
+   }
+   q.vx*=.996;q.vy*=.996;
+   let sp=Math.hypot(q.vx,q.vy),min=.00055,max=.0022;
+   if(sp<min){let ang=Math.atan2(Math.random()-.5,Math.random()-.5);q.vx+=Math.cos(ang)*min;q.vy+=Math.sin(ang)*min}
+   if(sp>max){q.vx=q.vx/sp*max;q.vy=q.vy/sp*max}
+   q.x+=q.vx;q.y+=q.vy;
+   let dx=q.x-a.x,dy=q.y-a.y,d=Math.hypot(dx,dy),lim=A.r/W-.04;
+   if(d>lim){q.x=a.x+dx/d*lim;q.y=a.y+dy/d*lim;q.vx*=-.85;q.vy*=-.85}
+   if(q.jump>0)q.jump-=.025;
+   coins.forEach((o,j)=>{if(Math.hypot(q.x*W-o.x,q.y*H-o.y)<28){q.score+=10;burst(o.x,o.y,colors[i]);coins.splice(j,1)}});
+   document.getElementById('s'+i).textContent=String(q.score).padStart(3,'0');drawAnimal(q,i,t);
+ });
+ // character bump
+ for(let i=0;i<3;i++)for(let j=i+1;j<3;j++){let A1=chars[i],B=chars[j],d=Math.hypot((A1.x-B.x)*W,(A1.y-B.y)*H);if(d<50){let nx=(B.x-A1.x)/(d/W||1),ny=(B.y-A1.y)/(d/H||1);A1.vx-=nx*.0004;A1.vy-=ny*.0004;B.vx+=nx*.0004;B.vy+=ny*.0004;burst((A1.x+B.x)*W/2,(A1.y+B.y)*H/2,colors[i])}}
+ sparks.forEach((s,i)=>{s.x+=s.vx*W;s.y+=s.vy*H;s.l-=.035;x.globalAlpha=Math.max(0,s.l);x.fillStyle=s.c;x.beginPath();x.arc(s.x,s.y,3,0,7);x.fill();x.globalAlpha=1;if(s.l<=0)sparks.splice(i,1)});
+ requestAnimationFrame(loop)
+}requestAnimationFrame(loop);
+
+let tm=12,ev=['COIN RUSH','POWER JUMP','FLYING CHICK','MEGA COINS','CHAOS ROUND'];
+setInterval(()=>{tm--;document.getElementById('timer').textContent=tm;if(tm<=0){tm=12;let e=ev[Math.floor(Math.random()*ev.length)];document.getElementById('event').textContent=e;document.getElementById('flash').textContent=e==='FLYING CHICK'?'🐔 FLY!':'⚡ '+e+'!';document.getElementById('flash').style.opacity=1;setTimeout(()=>document.getElementById('flash').style.opacity=0,750)}},1000);
+const chats=['🐰 BUNNY LOMPAT!','🐿️ NUTTY KEJAR COIN!','🐔 CHICK TERBANG!','🔥 CHAOS DIMULAI!','🪙 COIN RUSH!'];setInterval(()=>document.getElementById('chat').textContent=chats[Math.floor(Math.random()*chats.length)],1800);
 </script></body></html>
