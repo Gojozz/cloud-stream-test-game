@@ -21,7 +21,7 @@ jobs:
           python3 -m http.server 8080 &
           sleep 3
 
-      - name: Record game for 30 seconds
+      - name: Render game
         run: |
           chromium \
             --headless \
@@ -29,27 +29,45 @@ jobs:
             --disable-gpu \
             --disable-dev-shm-usage \
             --window-size=1280,720 \
+            --screenshot=frame.png \
             --virtual-time-budget=30000 \
-            --screenshot=/tmp/frame.png \
             http://127.0.0.1:8080
 
+          echo "Checking screenshot..."
+          ls -lh frame.png
+          file frame.png
+
+      - name: Create 30 second video
+        run: |
           ffmpeg \
+            -y \
             -loop 1 \
-            -i /tmp/frame.png \
+            -i frame.png \
             -t 30 \
             -r 30 \
+            -vf "scale=1280:720,format=yuv420p" \
             -c:v libx264 \
+            -preset veryfast \
             -pix_fmt yuv420p \
             -movflags +faststart \
             game-test.mp4
 
       - name: Check video
         run: |
+          echo "Video information:"
           ls -lh game-test.mp4
-          ffprobe -v error \
+
+          ffprobe \
+            -v error \
             -show_entries format=duration,size \
             -of default=noprint_wrappers=1 \
             game-test.mp4
+
+      - name: Upload screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-test-screenshot
+          path: frame.png
 
       - name: Upload video
         uses: actions/upload-artifact@v4
