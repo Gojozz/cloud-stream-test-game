@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cloud Stream Test</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111;font-family:Arial,sans-serif}
+canvas{display:block;width:100vw;height:100vh}
+</style>
+</head>
+<body>
+<canvas id="game" width="1280" height="720"></canvas>
+<script>
+const c=document.getElementById("game"),ctx=c.getContext("2d");
+let x=180,y=360,vx=7,vy=5,score=0,t=0;
+function draw(){
+  t++;
+  x+=vx;y+=vy;
+  if(x<35||x>1245){vx*=-1;score++}
+  if(y<35||y>685){vy*=-1;score++}
+
+  let g=ctx.createLinearGradient(0,0,1280,720);
+  g.addColorStop(0,"#101a3a");g.addColorStop(1,"#24102e");
+  ctx.fillStyle=g;ctx.fillRect(0,0,1280,720);
+
+  for(let i=0;i<20;i++){
+    let sx=(i*83+t*.25)%1280, sy=(i*47)%720;
+    ctx.fillStyle="rgba(255,255,255,.12)";
+    ctx.beginPath();ctx.arc(sx,sy,2+(i%3),0,Math.PI*2);ctx.fill();
+  }
+
+  ctx.strokeStyle="rgba(255,255,255,.25)";
+  ctx.lineWidth=4;ctx.strokeRect(30,30,1220,660);
+
+  let glow=ctx.createRadialGradient(x,y,2,x,y,45);
+  glow.addColorStop(0,"white");glow.addColorStop(.25,"#72e6ff");glow.addColorStop(1,"rgba(0,180,255,0)");
+  ctx.fillStyle=glow;ctx.beginPath();ctx.arc(x,y,45,0,Math.PI*2);ctx.fill();
+
+  ctx.fillStyle="#62d9ff";ctx.beginPath();ctx.arc(x,y,18,0,Math.PI*2);ctx.fill();
+
+  ctx.fillStyle="white";ctx.textAlign="center";
+  ctx.font="bold 42px Arial";ctx.fillText("CLOUD STREAM TEST",640,105);
+  ctx.font="24px Arial";ctx.fillText("GitHub Actions → Chromium → FFmpeg → YouTube",640,145);
+  ctx.font="bold 30px Arial";ctx.fillText("SCORE  "+score,640,640);
+  ctx.font="18px Arial";ctx.fillText("Automatic test game • no user input required",640,675);
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
