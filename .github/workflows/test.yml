@@ -1,4 +1,4 @@
-name: YouTube Live Test - Lightweight
+name: YouTube Live RTMPS Test
 
 on:
   workflow_dispatch:
@@ -52,49 +52,52 @@ jobs:
 
           sleep 5
 
-      - name: Test YouTube connection
+      - name: Stream to YouTube RTMPS
         env:
           DISPLAY: :99
           YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
-          echo "Starting YouTube stream..."
-          echo "Resolution: 1280x720"
-          echo "FPS: 30"
-          echo "Bitrate: 1500 kbps"
-          echo "Duration: 120 seconds"
-
           timeout 150 ffmpeg \
             -hide_banner \
             -loglevel info \
+            -re \
             -f x11grab \
             -video_size 1280x720 \
             -framerate 30 \
             -i :99.0 \
+            -f lavfi \
+            -i anullsrc=channel_layout=stereo:sample_rate=44100 \
             -t 120 \
             -c:v libx264 \
             -preset ultrafast \
             -tune zerolatency \
-            -b:v 1500k \
-            -maxrate 1500k \
-            -bufsize 3000k \
+            -b:v 4000k \
+            -minrate 4000k \
+            -maxrate 4000k \
+            -bufsize 8000k \
             -pix_fmt yuv420p \
             -g 60 \
             -keyint_min 60 \
+            -sc_threshold 0 \
+            -c:a aac \
+            -b:a 128k \
+            -ar 44100 \
+            -ac 2 \
             -f flv \
-            "rtmps://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}" \
+            "rtmps://a.rtmps.youtube.com/live2/${YOUTUBE_STREAM_KEY}" \
             2>&1 | tee youtube.log
 
-      - name: Show stream log
+      - name: Show diagnostic log
         if: always()
         run: |
-          echo "===== YOUTUBE LOG ====="
+          echo "===== LAST YOUTUBE LOG ====="
           tail -100 youtube.log || true
 
-      - name: Upload logs
+      - name: Upload diagnostic logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: youtube-test-logs
+          name: youtube-rtmps-test-logs
           path: |
             youtube.log
             chromium.log
