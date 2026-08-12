@@ -1,4 +1,4 @@
-Name: Cloud Game YouTube Live
+Cloud Game YouTube Live
 on:
   # 1. Jadwal Otomatis Jalankan Tiap Hari (Cron UTC)
   schedule:
