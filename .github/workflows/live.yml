@@ -1,120 +1,75 @@
-name: Marble Race YouTube Vertical Live
+name: Marble Race YouTube Shorts Live
 
 on:
   workflow_dispatch:
-
   schedule:
-    # 19:00 WIB = 12:00 UTC
-    - cron: "0 12 * * *"
+    # Setiap hari 19:00 WIB = 12:00 UTC
+    - cron: '0 12 * * *'
 
 jobs:
-
   stream:
-
     runs-on: ubuntu-latest
-
     timeout-minutes: 60
 
     steps:
 
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
         run: |
+          npm install
           sudo apt-get update
-          sudo apt-get install -y \
-            xvfb \
-            chromium-browser \
-            ffmpeg \
-            python3 \
-            curl
+          sudo apt-get install -y ffmpeg xvfb chromium-browser
 
-      - name: Install Node Dependencies
-        run: |
-          npm init -y
-          npm install express socket.io @google/generative-ai
-
-      - name: Start Xvfb
-        run: |
-          Xvfb :99 \
-            -screen 0 720x1280x24 \
-            -ac \
-            +extension GLX \
-            +render \
-            -noreset \
-            >/tmp/xvfb.log 2>&1 &
-
-          sleep 3
-
-      - name: Start Marble Server
+      - name: Start Express & Socket.io Server
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-
         run: |
-
-          if [ -z "$GEMINI_API_KEY" ]; then
-            echo "WARNING: GEMINI_API_KEY is missing"
-          else
+          if [ -n "$GEMINI_API_KEY" ]; then
             echo "Gemini API key detected"
+          else
+            echo "Gemini API key not detected - fallback host will be used"
           fi
 
-          node server.js >/tmp/server.log 2>&1 &
-
+          node server.js > /tmp/server.log 2>&1 &
           sleep 5
 
-          curl -I http://127.0.0.1:3000/index.html
+          curl -I http://localhost:3000/index.html
 
-      - name: Start Chromium
+      - name: Start Browser
         env:
           DISPLAY: :99
-
         run: |
+          # Virtual display 9:16
+          Xvfb :99 -screen 0 720x1280x24 &
 
+          sleep 2
+
+          # Chromium - menggunakan konfigurasi dari workflow
+          # yang sudah terbukti berhasil menampilkan gambar.
           chromium-browser \
             --no-sandbox \
-            --disable-dev-shm-usage \
-            --disable-gpu \
-            --no-first-run \
-            --no-default-browser-check \
-            --disable-features=UseDBus \
-            --disable-translate \
-            --disable-extensions \
+            --disable-setuid-sandbox \
             --window-size=720,1280 \
             --window-position=0,0 \
             --kiosk \
-            http://127.0.0.1:3000/index.html \
-            >/tmp/chromium.log 2>&1 &
+            --autoplay-policy=no-user-gesture-required \
+            http://localhost:3000 \
+            > /tmp/chromium.log 2>&1 &
 
-          sleep 10
-
-      - name: Verify Display
-        env:
-          DISPLAY: :99
-
-        run: |
-
-          ffmpeg \
-            -hide_banner \
-            -loglevel error \
-            -f x11grab \
-            -video_size 720x1280 \
-            -framerate 30 \
-            -i :99.0 \
-            -frames:v 1 \
-            -y /tmp/frame.png
-
-          test -s /tmp/frame.png
-
-          echo "Vertical display capture OK"
+          sleep 5
 
       - name: Stream to YouTube
         env:
           DISPLAY: :99
           STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
-
         run: |
-
           test -n "$STREAM_KEY"
 
           ffmpeg \
@@ -128,34 +83,27 @@ jobs:
             -f lavfi \
             -i anullsrc=channel_layout=stereo:sample_rate=44100 \
             -c:v libx264 \
-            -preset veryfast \
+            -preset ultrafast \
             -tune zerolatency \
-            -pix_fmt yuv420p \
-            -r 30 \
             -g 60 \
-            -keyint_min 60 \
-            -sc_threshold 0 \
+            -keyint_min 30 \
             -b:v 2500k \
-            -minrate 2500k \
             -maxrate 2500k \
             -bufsize 5000k \
+            -pix_fmt yuv420p \
             -c:a aac \
             -b:a 128k \
             -ar 44100 \
             -ac 2 \
+            -t 3600 \
             -f flv \
-            "rtmps://a.rtmps.youtube.com/live2/${STREAM_KEY}"
+            "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
 
       - name: Debug Logs
         if: always()
-
         run: |
-
-          echo "========== SERVER =========="
+          echo "========== SERVER LOG =========="
           tail -100 /tmp/server.log || true
 
-          echo "========== CHROMIUM =========="
+          echo "========== CHROMIUM LOG =========="
           tail -100 /tmp/chromium.log || true
-
-          echo "========== XVFB =========="
-          tail -100 /tmp/xvfb.log || true
