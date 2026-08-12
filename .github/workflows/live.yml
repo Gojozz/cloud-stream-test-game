@@ -1,5 +1,4 @@
 Cloud Game YouTube Live
-on:
   # 1. Jadwal Otomatis Jalankan Tiap Hari (Cron UTC)
   schedule:
     # 12:00 UTC = 19:00 WIB (Silakan ubah jika ingin jam lain)
