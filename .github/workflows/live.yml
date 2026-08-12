@@ -1,23 +1,25 @@
-Cloud Game YouTube Live
+name: Cloud Game YouTube Live
+
+on:
   # 1. Jadwal Otomatis Jalankan Tiap Hari (Cron UTC)
   schedule:
-    # 12:00 UTC = 19:00 WIB (Silakan ubah jika ingin jam lain)
+    # 12:00 UTC = 19:00 WIB
     - cron: '0 12 * * *'
 
-  # 2. Tetap bisa dinyalakan manual lewat tombol Action di GitHub
+  # 2. Bisa dinyalakan manual lewat tombol Action di GitHub
   workflow_dispatch:
 
 jobs:
   stream:
     runs-on: ubuntu-latest
     
-    # UBAH KETAT DARI 350 MENIT MENJADI 60 MENIT (1 JAM)
+    # Batas streaming 1 Jam (60 Menit)
     timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
 
-      # Setup Node.js untuk menjalankan server.js AI
+      # Setup Node.js untuk server.js AI
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -28,7 +30,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb chromium-browser ffmpeg python3 curl
 
-      # Install library Node.js (express, socket.io, @google/generative-ai)
       - name: Install Node Dependencies
         run: |
           npm install
@@ -38,7 +39,6 @@ jobs:
           Xvfb :99 -screen 0 1280x720x24 -ac +extension GLX +render -noreset >/tmp/xvfb.log 2>&1 &
           sleep 2
 
-      # Menjalankan Node.js server.js (Bukan python http.server) agar AI Host aktif
       - name: Start AI Web Server
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
