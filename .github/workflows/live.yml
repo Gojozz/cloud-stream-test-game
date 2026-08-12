@@ -1,80 +1,54 @@
-name: Cloud Game YouTube Live
+name: YouTube Shorts Live Stream
 
 on:
-  schedule:
-    - cron: '0 12 * * *'
   workflow_dispatch:
 
 jobs:
   stream:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb chromium-browser ffmpeg python3 curl
-
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install Node Packages
+      - name: Install Dependencies
         run: |
-          npm install || true
+          npm install
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg xvfb chromium-browser
 
-      - name: Start AI Server (Background)
+      - name: Start Express & Socket.io Server
+        run: |
+          node server.js &
+          sleep 5
+
+      - name: Start Headless Browser & Stream to YouTube Shorts
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          node server.js >/tmp/node.log 2>&1 &
-          sleep 3
-
-      - name: Start Xvfb Virtual Display
-        run: |
-          Xvfb :99 -screen 0 1280x720x24 -ac +extension GLX +render -noreset >/tmp/xvfb.log 2>&1 &
-          sleep 2
-
-      - name: Start Web Server
-        run: |
-          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/http.log 2>&1 &
-          sleep 2
-          curl -I http://127.0.0.1:8080/index.html
-
-      - name: Start Chromium (With Audio Autoplay Fix)
-        env:
-          DISPLAY: :99
-        run: |
-          chromium-browser \
-            --no-sandbox \
-            --test-type \
-            --kiosk \
-            --start-fullscreen \
-            --disable-dev-shm-usage \
-            --disable-gpu \
-            --no-first-run \
-            --no-default-browser-check \
-            --autoplay-policy=no-user-gesture-required \
-            --window-size=1280,720 \
-            --window-position=0,0 \
-            http://127.0.0.1:8080/index.html >/tmp/chromium.log 2>&1 &
-          sleep 8
-
-      - name: Verify Screen Capture
-        env:
-          DISPLAY: :99
-        run: |
-          ffmpeg -hide_banner -f x11grab -video_size 1280x720 -framerate 30 -i :99.0 -frames:v 1 -y /tmp/frame.png
-          test -s /tmp/frame.png
-
-      - name: Stream to YouTube
-        env:
-          DISPLAY: :99
           STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
-          test -n "$STREAM_KEY"
-          ffmpeg -hide_banner -loglevel info -f x11grab -video_size 1280x720 -framerate 30 -draw_mouse 0 -i :99.0 -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p -r 30 -g 60 -keyint_min 60 -sc_threshold 0 -b:v 1800k -minrate 1800k -maxrate 1800k -bufsize 3600k -c:a aac -b:a 128k -ar 44100 -ac 2 -f flv "rtmps://a.rtmps.youtube.com/live2/${STREAM_KEY}"
+          # 1. Resolusi Virtual Display diubah ke Vertikal (720x1280)
+          Xvfb :99 -screen 0 720x1280x24 &
+          export DISPLAY=:99
+          sleep 2
+
+          # 2. Window Size Browser diubah ke Vertikal (720x1280)
+          chromium-browser --no-sandbox --disable-setuid-sandbox \
+            --window-size=720,1280 \
+            --window-position=0,0 \
+            --kiosk \
+            --autoplay-policy=no-user-gesture-required \
+            http://localhost:3000 &
+          sleep 5
+
+          # 3. Input Video FFmpeg disesuaikan ke 720x1280 (Sistem Audio & Encoding TETAP ASLI)
+          ffmpeg -f x11grab -video_size 720x1280 -framerate 30 -i :99.0 \
+            -f pulse -ac 2 -i default \
+            -c:v libx264 -preset ultrafast -tune zerolatency \
+            -g 60 -keyint_min 30 -b:v 2500k -maxrate 2500k -bufsize 5000k \
+            -pix_fmt yuv420p \
+            -c:a aac -b:a 1280k -ar 44100 \
+            -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
