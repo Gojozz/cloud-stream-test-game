@@ -1,41 +1,82 @@
-name: Cloud Game YouTube Live
+Name: Cloud Game YouTube Live
 on:
+  # 1. Jadwal Otomatis Jalankan Tiap Hari (Cron UTC)
+  schedule:
+    # 12:00 UTC = 19:00 WIB (Silakan ubah jika ingin jam lain)
+    - cron: '0 12 * * *'
+
+  # 2. Tetap bisa dinyalakan manual lewat tombol Action di GitHub
   workflow_dispatch:
+
 jobs:
   stream:
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    
+    # UBAH KETAT DARI 350 MENIT MENJADI 60 MENIT (1 JAM)
+    timeout-minutes: 60
+
     steps:
       - uses: actions/checkout@v4
-      - name: Install
+
+      # Setup Node.js untuk menjalankan server.js AI
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install System Packages
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb chromium-browser ffmpeg python3 curl
+
+      # Install library Node.js (express, socket.io, @google/generative-ai)
+      - name: Install Node Dependencies
+        run: |
+          npm install
+
       - name: Xvfb
         run: |
           Xvfb :99 -screen 0 1280x720x24 -ac +extension GLX +render -noreset >/tmp/xvfb.log 2>&1 &
           sleep 2
-      - name: Web server
+
+      # Menjalankan Node.js server.js (Bukan python http.server) agar AI Host aktif
+      - name: Start AI Web Server
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/http.log 2>&1 &
-          sleep 2
-          curl -I http://127.0.0.1:8080/index.html
+          node server.js >/tmp/node.log 2>&1 &
+          sleep 3
+          curl -I http://127.0.0.1:3000/
+
       - name: Chromium
         env:
           DISPLAY: :99
         run: |
-          chromium-browser --no-sandbox --disable-dev-shm-usage --disable-gpu             --no-first-run --no-default-browser-check --disable-features=UseDBus             --window-size=1280,720 --window-position=0,0             http://127.0.0.1:8080/index.html >/tmp/chromium.log 2>&1 &
+          chromium-browser --no-sandbox --disable-dev-shm-usage --disable-gpu \
+            --no-first-run --no-default-browser-check --disable-features=UseDBus \
+            --window-size=1280,720 --window-position=0,0 \
+            http://127.0.0.1:3000/ >/tmp/chromium.log 2>&1 &
           sleep 8
+
       - name: Verify capture
         env:
           DISPLAY: :99
         run: |
-          ffmpeg -hide_banner -f x11grab -video_size 1280x720 -framerate 30             -i :99.0 -frames:v 1 -y /tmp/frame.png
+          ffmpeg -hide_banner -f x11grab -video_size 1280x720 -framerate 30 \
+            -i :99.0 -frames:v 1 -y /tmp/frame.png
           test -s /tmp/frame.png
+
       - name: Stream to YouTube
         env:
           DISPLAY: :99
           STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
           test -n "$STREAM_KEY"
-          ffmpeg -hide_banner -loglevel info             -f x11grab -video_size 1280x720 -framerate 30 -draw_mouse 0 -i :99.0             -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100             -c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p             -r 30 -g 60 -keyint_min 60 -sc_threshold 0             -b:v 1800k -minrate 1800k -maxrate 1800k -bufsize 3600k             -c:a aac -b:a 128k -ar 44100 -ac 2 -f flv             "rtmps://a.rtmps.youtube.com/live2/${STREAM_KEY}"
+          ffmpeg -hide_banner -loglevel info \
+            -f x11grab -video_size 1280x720 -framerate 30 -draw_mouse 0 -i :99.0 \
+            -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+            -c:v libx264 -preset veryfast -tune zerolatency -pix_fmt yuv420p \
+            -r 30 -g 60 -keyint_min 60 -sc_threshold 0 \
+            -b:v 1800k -minrate 1800k -maxrate 1800k -bufsize 3600k \
+            -c:a aac -b:a 128k -ar 44100 -ac 2 -f flv \
+            "rtmps://a.rtmps.youtube.com/live2/${STREAM_KEY}"
