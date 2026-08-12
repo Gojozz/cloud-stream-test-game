@@ -3,7 +3,7 @@ name: YouTube Shorts Live Stream
 on:
   workflow_dispatch:
   schedule:
-    # Otomatis jalan setiap hari jam 19.00 WIB (12.00 UTC)
+    # Jadwal otomatis jam 19.00 WIB
     - cron: '0 12 * * *'
 
 jobs:
@@ -20,16 +20,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Dependencies & Setup Virtual Audio
+      - name: Install Dependencies
         run: |
           npm install
           sudo apt-get update
-          sudo apt-get install -y ffmpeg xvfb chromium-browser pulseaudio alsa-utils
-
-          # Inisialisasi Audio
-          pulseaudio -D --exit-idle-time=-1
-          pacmd load-module module-null-sink sink_name=Virtual_Sink sink_properties=device.description="Virtual_Sink"
-          pacmd set-default-sink Virtual_Sink
+          sudo apt-get install -y ffmpeg xvfb chromium-browser pulseaudio
 
       - name: Start Express & Socket.io Server
         run: |
@@ -40,33 +35,31 @@ jobs:
         env:
           STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
-          # 1. Virtual Display Vertikal (720x1280)
+          # 1. Start PulseAudio untuk Audio
+          pulseaudio --start
+          sleep 2
+
+          # 2. Setup Layar Vertikal
           Xvfb :99 -screen 0 720x1280x24 &
           export DISPLAY=:99
           sleep 2
 
-          # 2. Browser (Tanpa Translate, GPU Akselerasi untuk Anti-Lag)
+          # 3. Jalankan Browser (Tanpa Translate & Tanpa Popup)
           chromium-browser --no-sandbox --disable-setuid-sandbox \
             --window-size=720,1280 \
             --window-position=0,0 \
             --kiosk \
-            --incognito \
             --disable-translate \
             --disable-features=Translate \
-            --disable-component-update \
             --autoplay-policy=no-user-gesture-required \
-            --use-gl=angle \
-            --use-angle=swiftshader \
-            --enable-webgl \
             http://localhost:3000 &
           sleep 5
 
-          # 3. Stream FFmpeg (Suara + Video)
-          ffmpeg -f x11grab -video_size 720x1280 -framerate 25 -i :99.0 \
-            -f pulse -i Virtual_Sink.monitor \
+          # 4. Stream ke YouTube
+          ffmpeg -f x11grab -video_size 720x1280 -framerate 30 -i :99.0 \
+            -f pulse -ac 2 -i default \
             -c:v libx264 -preset ultrafast -tune zerolatency \
-            -g 50 -keyint_min 25 -b:v 2000k -maxrate 2000k -bufsize 4000k \
+            -g 60 -keyint_min 30 -b:v 2500k -maxrate 2500k -bufsize 5000k \
             -pix_fmt yuv420p \
             -c:a aac -b:a 128k -ar 44100 \
-            -t 3600 \
             -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
