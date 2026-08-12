@@ -27,7 +27,7 @@ try {
     const genAI = new GoogleGenerativeAI(key);
 
     model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash"
+      model: "gemini-3.5-flash-lite"
     });
 
     console.log("LUNA AI ONLINE");
@@ -241,14 +241,23 @@ async function startYouTubeChat() {
       await youtube.liveBroadcasts.list({
         part: "id,snippet,status",
         broadcastStatus: "active",
-        broadcastType: "all",
         maxResults: 10
       });
 
-    const broadcasts = response.data.items || [];
+    const broadcasts =
+      response.data.items || [];
 
     if (!broadcasts.length) {
-      console.log("No active YouTube broadcast.");
+
+      console.log(
+        "No active YouTube broadcast. Retrying in 15 seconds..."
+      );
+
+      setTimeout(
+        startYouTubeChat,
+        15000
+      );
+
       return;
     }
 
@@ -258,11 +267,22 @@ async function startYouTubeChat() {
       live.snippet?.liveChatId;
 
     if (!liveChatId) {
-      console.log("Active broadcast has no Live Chat.");
+
+      console.log(
+        "Active broadcast has no Live Chat. Retrying..."
+      );
+
+      setTimeout(
+        startYouTubeChat,
+        15000
+      );
+
       return;
     }
 
-    console.log("YouTube Live Chat connected.");
+    console.log(
+      "YouTube Live Chat connected."
+    );
 
     chatStarted = true;
 
@@ -278,6 +298,12 @@ async function startYouTubeChat() {
       error.response?.data || error.message
     );
 
+    chatStarted = false;
+
+    setTimeout(
+      startYouTubeChat,
+      15000
+    );
   }
 }
 
