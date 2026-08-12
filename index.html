@@ -69,13 +69,14 @@
         <div class="ai-speech" id="aiSpeech">Selamat datang penonton! Tulis angka pilihanmu di Live Chat!</div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        const socket = io();
+        // Hubungkan ke Node server AI di port 3000
+        const socket = io('http://127.0.0.1:3000');
         const wheel = document.getElementById('wheel');
         const aiSpeech = document.getElementById('aiSpeech');
 
-        // Menerima perintah putar & ucapan AI dari Server
+        // Terima perintah putar roda & ucapan dari AI Host
         socket.on('aiResponse', (data) => {
             if (data.speechText) {
                 aiSpeech.innerText = data.speechText;
