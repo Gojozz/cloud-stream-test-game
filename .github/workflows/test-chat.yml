@@ -66,8 +66,8 @@ jobs:
             const response =
               await youtube.liveBroadcasts.list({
                 part: "id,snippet,status",
-                mine: true,
                 broadcastStatus: "active",
+                broadcastType: "all",
                 maxResults: 10
               });
 
