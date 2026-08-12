@@ -2,74 +2,107 @@ name: Marble Race YouTube Shorts Live
 
 on:
   workflow_dispatch:
+
   schedule:
-    # Setiap hari 19:00 WIB = 12:00 UTC
-    - cron: '0 12 * * *'
+    # 19:00 WIB = 12:00 UTC
+    - cron: "0 12 * * *"
 
 jobs:
+
   stream:
+
     runs-on: ubuntu-latest
+
     timeout-minutes: 60
 
     steps:
 
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
-      - name: Install Dependencies
+      - name: Install
         run: |
-          npm install
           sudo apt-get update
-          sudo apt-get install -y ffmpeg xvfb chromium-browser
+          sudo apt-get install -y \
+            xvfb \
+            chromium-browser \
+            ffmpeg \
+            python3
 
-      - name: Start Express & Socket.io Server
+          npm install
+
+      - name: Start Xvfb
+        run: |
+          Xvfb :99 \
+            -screen 0 720x1280x24 \
+            -ac \
+            +extension GLX \
+            +render \
+            -noreset \
+            >/tmp/xvfb.log 2>&1 &
+
+          sleep 3
+
+      - name: Start Marble Server
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          if [ -n "$GEMINI_API_KEY" ]; then
-            echo "Gemini API key detected"
-          else
-            echo "Gemini API key not detected - fallback host will be used"
-          fi
+          node server.js >/tmp/server.log 2>&1 &
 
-          node server.js > /tmp/server.log 2>&1 &
           sleep 5
 
-          curl -I http://localhost:3000/index.html
+          curl -I http://127.0.0.1:3000/index.html
 
-      - name: Start Browser
+      - name: Start Chromium
         env:
           DISPLAY: :99
         run: |
-          # Virtual display 9:16
-          Xvfb :99 -screen 0 720x1280x24 &
-
-          sleep 2
-
-          # Chromium - menggunakan konfigurasi dari workflow
-          # yang sudah terbukti berhasil menampilkan gambar.
           chromium-browser \
             --no-sandbox \
-            --disable-setuid-sandbox \
+            --disable-dev-shm-usage \
+            --disable-gpu \
+            --no-first-run \
+            --no-default-browser-check \
+            --disable-features=UseDBus \
+            --disable-translate \
+            --disable-extensions \
             --window-size=720,1280 \
             --window-position=0,0 \
             --kiosk \
-            --autoplay-policy=no-user-gesture-required \
-            http://localhost:3000 \
-            > /tmp/chromium.log 2>&1 &
+            http://127.0.0.1:3000/index.html \
+            >/tmp/chromium.log 2>&1 &
 
-          sleep 5
+          sleep 8
+
+      - name: Verify Display
+        env:
+          DISPLAY: :99
+        run: |
+          ffmpeg \
+            -hide_banner \
+            -loglevel error \
+            -f x11grab \
+            -video_size 720x1280 \
+            -framerate 30 \
+            -i :99.0 \
+            -frames:v 1 \
+            -y /tmp/frame.png
+
+          test -s /tmp/frame.png
+
+          echo "DISPLAY OK"
 
       - name: Stream to YouTube
         env:
           DISPLAY: :99
           STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
+
           test -n "$STREAM_KEY"
 
           ffmpeg \
@@ -85,25 +118,31 @@ jobs:
             -c:v libx264 \
             -preset ultrafast \
             -tune zerolatency \
+            -pix_fmt yuv420p \
+            -r 30 \
             -g 60 \
-            -keyint_min 30 \
+            -keyint_min 60 \
+            -sc_threshold 0 \
             -b:v 2500k \
+            -minrate 2500k \
             -maxrate 2500k \
             -bufsize 5000k \
-            -pix_fmt yuv420p \
             -c:a aac \
             -b:a 128k \
             -ar 44100 \
             -ac 2 \
             -t 3600 \
             -f flv \
-            "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
+            "rtmp://a.rtmp.youtube.com/live2/${STREAM_KEY}"
 
       - name: Debug Logs
         if: always()
         run: |
-          echo "========== SERVER LOG =========="
+          echo "===== SERVER ====="
           tail -100 /tmp/server.log || true
 
-          echo "========== CHROMIUM LOG =========="
+          echo "===== CHROMIUM ====="
           tail -100 /tmp/chromium.log || true
+
+          echo "===== XVFB ====="
+          tail -100 /tmp/xvfb.log || true

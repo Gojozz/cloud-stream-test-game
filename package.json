@@ -1,10 +1,14 @@
 {
-  "name": "live-shorts-game",
+  "name": "marble-race-live",
   "version": "1.0.0",
+  "private": true,
   "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
-    "@google/generative-ai": "^0.21.0",
-    "express": "^4.19.2",
-    "socket.io": "^4.7.5"
+    "@google/generative-ai": "^0.24.1",
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
   }
 }

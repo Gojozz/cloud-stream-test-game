@@ -13,178 +13,175 @@ const io = new Server(server, {
 
 app.use(express.static("."));
 
+/* =========================
+   LUNA AI
+========================= */
+
 let model = null;
 
 try {
 
-    const { GoogleGenerativeAI } =
-        require("@google/generative-ai");
+    const {
+        GoogleGenerativeAI
+    } = require("@google/generative-ai");
 
-    const apiKey =
+    const key =
         process.env.GEMINI_API_KEY || "";
 
-    if (apiKey) {
+    if (key) {
 
         const genAI =
-            new GoogleGenerativeAI(apiKey);
+            new GoogleGenerativeAI(key);
 
         model =
             genAI.getGenerativeModel({
                 model: "gemini-1.5-flash"
             });
 
-        console.log("================================");
-        console.log("LUNA AI: GEMINI INITIALIZED");
-        console.log("================================");
+        console.log("LUNA AI ONLINE");
 
     } else {
 
-        console.log("LUNA AI: GEMINI_API_KEY NOT FOUND");
-
+        console.log(
+            "GEMINI_API_KEY not found - fallback mode"
+        );
     }
 
 } catch (error) {
 
     console.log(
-        "Gemini SDK unavailable:",
+        "Gemini unavailable:",
         error.message
     );
-
 }
 
-const players = [
-    {
-        name: "Rizal",
-        color: "#ff1744"
-    },
-    {
-        name: "Budi",
-        color: "#00e5ff"
-    },
-    {
-        name: "Siti",
-        color: "#ffd166"
-    },
-    {
-        name: "Agus",
-        color: "#2ecc71"
-    },
-    {
-        name: "Dewi",
-        color: "#b86bff"
-    }
+/* =========================
+   PLAYERS
+========================= */
+
+const defaultPlayers = [
+    { name: "Rizal", color: "#ff1744" },
+    { name: "Budi", color: "#00e5ff" },
+    { name: "Siti", color: "#ffd166" },
+    { name: "Agus", color: "#2ecc71" },
+    { name: "Dewi", color: "#b86bff" }
 ];
+
+let players = [...defaultPlayers];
 
 let round = 0;
 
-function randomComment() {
+/* =========================
+   COMMENTS
+========================= */
 
-    const comments = [
-        "The marbles are flying! This race is getting wild!",
-        "What a battle! Nobody is giving up!",
-        "Look at that speed! This could go either way!",
-        "The finish line is getting closer!",
-        "This race is absolutely insane!",
-        "Someone is about to make a huge comeback!"
-    ];
+const fallbackComments = [
+    "The race is heating up!",
+    "Look at that speed!",
+    "Anything can happen now!",
+    "The finish line is getting closer!",
+    "What an incredible battle!",
+    "Someone is making a huge comeback!"
+];
 
-    return comments[
-        Math.floor(Math.random() * comments.length)
+function fallbackComment() {
+
+    return fallbackComments[
+        Math.floor(
+            Math.random() *
+            fallbackComments.length
+        )
     ];
 }
 
 async function lunaComment(event) {
 
-    if (!model) {
-
-        console.log(
-            "LUNA AI: using fallback commentary"
-        );
-
-        return randomComment();
-    }
+    if (!model)
+        return fallbackComment();
 
     try {
 
         const prompt = `
-You are Luna, an energetic AI host for a global YouTube LIVE Marble Race.
+You are Luna, an energetic live sports commentator.
 
 Event:
 ${event}
 
 Rules:
-- Write exactly ONE short sentence.
-- Maximum 16 words.
-- Exciting, natural, family-friendly.
-- Speak like a live sports commentator.
-- Do not mention AI.
-- Do not use hashtags.
-- Do not explain anything.
+ONE sentence only.
+Maximum 14 words.
+Exciting.
+Family friendly.
+Natural English.
+Do not mention AI.
+Do not use hashtags.
 `;
 
         const result =
             await model.generateContent(prompt);
 
         const text =
-            result.response
-                .text()
-                .trim();
+            result.response.text().trim();
 
-        if (text) {
-
-            console.log(
-                "LUNA AI:",
-                text
-            );
-
+        if (text)
             return text;
-        }
 
     } catch (error) {
 
-        console.error(
-            "LUNA GEMINI ERROR:",
+        console.log(
+            "Luna error:",
             error.message
         );
     }
 
-    return randomComment();
+    return fallbackComment();
 }
 
+/* =========================
+   HELPERS
+========================= */
+
 function sleep(ms) {
+
     return new Promise(
         resolve => setTimeout(resolve, ms)
     );
 }
+
+/* =========================
+   RACE
+========================= */
 
 async function runRace() {
 
     round++;
 
     console.log(
-        `Starting Marble Race #${round}`
+        `Starting race ${round}`
     );
 
-    const startComment =
+    const startText =
         await lunaComment(
-            `Round ${round} is about to begin. Five marbles are waiting at the starting line.`
+            `Round ${round} is starting. Five players are ready.`
         );
 
     io.emit("raceStart", {
         round,
-        message: startComment
+        message: startText
     });
 
-    await sleep(4000);
+    await sleep(2000);
 
     const positions =
-        players.map(() => 0);
+        players.map(() => 35);
 
     const finished = [];
 
-    let raceRunning = true;
+    const finishPosition = 690;
 
-    while (raceRunning) {
+    let running = true;
+
+    while (running) {
 
         for (
             let i = 0;
@@ -192,44 +189,41 @@ async function runRace() {
             i++
         ) {
 
-            if (finished.includes(i))
-                continue;
+            if (
+                finished.includes(i)
+            ) continue;
 
-            const boost =
-                8 + Math.random() * 18;
+            positions[i] +=
+                8 + Math.random() * 16;
 
-            positions[i] += boost;
+            if (
+                positions[i] >=
+                finishPosition
+            ) {
 
-            if (positions[i] >= 690) {
-
-                positions[i] = 690;
+                positions[i] =
+                    finishPosition;
 
                 finished.push(i);
 
                 const player =
                     players[i];
 
-                const comment =
+                const text =
                     await lunaComment(
-                        `${player.name}'s marble just reached the finish line in position ${finished.length}.`
+                        `${player.name} just finished in position ${finished.length}.`
                     );
 
                 io.emit("aiResponse", {
-                    speechText: comment,
-                    playerName: player.name
+                    speechText: text,
+                    playerName: player.name,
+                    playerIndex: i
                 });
 
                 io.emit("raceWinner", {
                     playerName: player.name,
                     position: finished.length
                 });
-
-                if (finished.length === 1) {
-
-                    console.log(
-                        `Winner Round ${round}: ${player.name}`
-                    );
-                }
             }
         }
 
@@ -241,70 +235,69 @@ async function runRace() {
             finished.length >=
             players.length
         ) {
-
-            raceRunning = false;
+            running = false;
         }
 
-        await sleep(350);
+        await sleep(250);
     }
 
     const winner =
         players[finished[0]];
 
-    const finalComment =
+    const finalText =
         await lunaComment(
-            `${winner.name} won Marble Race round ${round}. Celebrate the winner and tease the next race.`
+            `${winner.name} won round ${round}. Celebrate and invite viewers to join the next race.`
         );
 
     io.emit("aiResponse", {
-        speechText: finalComment,
+        speechText: finalText,
         playerName: winner.name
     });
 
     console.log(
-        `Race #${round} finished.`
+        `Winner: ${winner.name}`
     );
 
-    await sleep(7000);
+    await sleep(6000);
 
     runRace();
 }
 
+/* =========================
+   SOCKET
+========================= */
+
 io.on("connection", socket => {
 
     console.log(
-        "Marble display connected:",
+        "Display connected:",
         socket.id
     );
 
+    socket.emit("playerUpdate", {
+        players
+    });
+
     socket.emit("aiResponse", {
         speechText:
-            "Welcome to Marble Race Live! Get ready for the next battle!"
+            "Welcome to Marble Race Live! Type your name in chat for a chance to race!"
     });
 });
 
+/* =========================
+   SERVER
+========================= */
+
 server.listen(3000, () => {
 
+    console.log("==============================");
+    console.log("MARBLE RACE SERVER");
+    console.log("PORT: 3000");
     console.log(
-        "================================"
+        "LUNA:",
+        model ? "ONLINE" : "FALLBACK"
     );
-
-    console.log(
-        "MARBLE GAME SERVER RUNNING"
-    );
-
-    console.log(
-        "PORT: 3000"
-    );
-
-    console.log(
-        "GEMINI:",
-        model ? "ONLINE" : "OFFLINE"
-    );
-
-    console.log(
-        "================================"
-    );
+    console.log("==============================");
 
     runRace();
 });
