@@ -7,7 +7,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
         body { 
-            background: radial-gradient(circle at center, #111425 0%, #080910 100%); 
+            background: #0a0c14; 
             color: #fff; 
             width: 720px; 
             height: 1280px; 
@@ -20,42 +20,39 @@
         }
 
         /* HEADER */
-        .header { text-align: center; }
+        .header { text-align: center; margin-top: 10px; }
         .title { 
             font-size: 3.5rem; 
             font-weight: 900; 
             letter-spacing: 2px; 
-            background: linear-gradient(180deg, #fff 20%, #ffb703 100%); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            text-shadow: 0 0 25px rgba(255, 183, 3, 0.5); 
+            color: #ffb703;
+            text-shadow: 0 0 20px rgba(255, 183, 3, 0.6); 
         }
         .subtitle { 
             color: #00f0ff; 
             font-weight: 700; 
             font-size: 1.2rem; 
             text-transform: uppercase; 
-            letter-spacing: 5px; 
+            letter-spacing: 4px; 
         }
 
         /* TRACK BALAPAN */
         .track-container {
             width: 100%;
-            height: 780px;
-            background: rgba(255, 255, 255, 0.03);
+            height: 800px;
+            background: rgba(255, 255, 255, 0.04);
             border: 4px solid #ffb703;
             border-radius: 24px;
             position: relative;
             overflow: hidden;
-            box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 0 20px rgba(255, 183, 3, 0.2);
         }
 
         /* FINISH LINE */
         .finish-line {
             position: absolute;
-            bottom: 40px;
+            bottom: 30px;
             width: 100%;
-            height: 20px;
+            height: 25px;
             background: repeating-linear-gradient(45deg, #fff, #fff 15px, #000 15px, #000 30px);
             border-top: 3px solid #ff0055;
             border-bottom: 3px solid #ff0055;
@@ -63,31 +60,31 @@
 
         /* MARBLE */
         .marble {
-            width: 65px;
-            height: 65px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
             position: absolute;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 900;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             color: #000;
-            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-            box-shadow: 0 0 20px rgba(255,255,255,0.9);
+            transition: top 1s ease-in-out;
+            box-shadow: 0 0 15px rgba(255,255,255,0.8);
             border: 3px solid #fff;
         }
 
         /* AI HOST BANNER */
         .ai-banner {
             width: 100%;
-            background: linear-gradient(90deg, rgba(138,43,226,0.95), rgba(0,240,255,0.95));
+            background: #8a2be2;
             border-radius: 20px;
             padding: 20px;
             display: flex;
             flex-direction: column;
             gap: 8px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
         }
         
         .ai-badge { 
@@ -97,7 +94,6 @@
             padding: 6px 14px; 
             border-radius: 20px; 
             font-size: 0.85rem; 
-            letter-spacing: 1.5px;
             width: fit-content;
         }
 
@@ -118,10 +114,10 @@
 
     <div class="track-container">
         <div class="finish-line"></div>
-        <div class="marble" id="m1" style="background:#ff0055; top:40px; left:80px;">Rizal</div>
-        <div class="marble" id="m2" style="background:#00f0ff; top:40px; left:220px;">Budi</div>
-        <div class="marble" id="m3" style="background:#ffb703; top:40px; left:360px;">Siti</div>
-        <div class="marble" id="m4" style="background:#2ecc71; top:40px; left:500px;">Agus</div>
+        <div class="marble" id="m1" style="background:#ff0055; top:40px; left:60px;">Rizal</div>
+        <div class="marble" id="m2" style="background:#00f0ff; top:40px; left:200px;">Budi</div>
+        <div class="marble" id="m3" style="background:#ffb703; top:40px; left:340px;">Siti</div>
+        <div class="marble" id="m4" style="background:#2ecc71; top:40px; left:480px;">Agus</div>
     </div>
 
     <div class="ai-banner">
@@ -137,17 +133,17 @@
         const m3 = document.getElementById('m3');
         const m4 = document.getElementById('m4');
 
-        // WEB AUDIO SYNTHESIZER (BGM & SFX Bawaan)
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-        function playTone(freq, duration, type='sine') {
+        // Safe Web Audio API
+        let audioCtx;
+        function playTone(freq, duration) {
             try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                osc.type = type;
                 osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
@@ -155,35 +151,20 @@
             } catch(e){}
         }
 
-        function playRaceSound() {
-            // Efek suara kelereng menggelinding/memantul
-            playTone(200 + Math.random() * 400, 0.15, 'triangle');
-        }
-
-        function playWinSound() {
-            // Efek suara kemenangan saat menyentuh finish
-            playTone(523.25, 0.2, 'square');
-            setTimeout(() => playTone(659.25, 0.2, 'square'), 120);
-            setTimeout(() => playTone(783.99, 0.4, 'square'), 240);
-        }
-
-        document.addEventListener('click', () => { audioCtx.resume(); }, { once: true });
-
-        // Connect ke Server Socket.io
+        // Connect Socket
         try {
             const socket = io('http://127.0.0.1:3000');
 
             socket.on('aiResponse', (data) => {
                 if (data.speechText) aiSpeech.innerText = data.speechText;
                 
-                // Update posisi kelereng secara acak meluncur ke bawah
-                m1.style.top = (Math.random() * 600 + 60) + "px";
-                m2.style.top = (Math.random() * 600 + 60) + "px";
-                m3.style.top = (Math.random() * 600 + 60) + "px";
-                m4.style.top = (Math.random() * 600 + 60) + "px";
+                // Animasi Pergerakan Kelereng
+                m1.style.top = (Math.random() * 620 + 50) + "px";
+                m2.style.top = (Math.random() * 620 + 50) + "px";
+                m3.style.top = (Math.random() * 620 + 50) + "px";
+                m4.style.top = (Math.random() * 620 + 50) + "px";
 
-                playRaceSound();
-                setTimeout(() => playWinSound(), 800);
+                playTone(440, 0.2);
             });
         } catch(e) {}
     </script>
