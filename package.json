@@ -9,6 +9,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "express": "^4.21.2",
+    "googleapis": "^174.0.1",
     "socket.io": "^4.8.1"
   }
 }
