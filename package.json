@@ -1,11 +1,7 @@
 {
-  "name": "cloud-stream-ai",
+  "name": "live-shorts-game",
   "version": "1.0.0",
-  "description": "Super Spin AI Interactive Stream",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
     "express": "^4.19.2",
