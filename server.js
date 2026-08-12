@@ -8,8 +8,8 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Inisialisasi Gemini AI (Masukkan API Key kamu nanti di sini atau via Environment Variable)
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "GEMINI_API_KEY_KAMU";
+// API Key Gemini
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "YOUR_GEMINI_API_KEY";
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -19,58 +19,55 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Fungsi Simulasi/Logika AI Merespons Chat
-async function handleUserChat(username, message) {
+// Fungsi AI Merespons Pesan Live Chat
+async function processLiveChat(username, userMessage) {
   try {
-    const prompt = `Kamu adalah LUNA, Host AI interaktif untuk Live Game Show 'SUPER SPIN'.
-Penonton bernama '${username}' mengirim pesan: "${message}".
+    const prompt = `Kamu adalah LUNA, Host AI cantik & seru untuk Game Show 'SUPER SPIN' di YouTube Live.
+Penonton bernama '${username}' mengirim pesan: "${userMessage}".
 Tugasmu:
-1. Jawab pesan mereka secara singkat, seru, ceria, dan interaktif (maksimal 15 kata).
-2. Jika mereka menebak angka 1-15, semangati mereka.
-3. Tentukan satu angka pemenang acak antara 1 sampai 15.
+1. Sapa '${username}' dan respon pesannya secara ramah, singkat, dan heboh (maksimal 12 kata).
+2. Tentukan satu angka keberuntungan antara 1 sampai 15 untuk memutar roda spin.
 
-Format respons WAJIB JSON:
-{"speechText": "Jawaban kamu di sini", "targetNumber": 7}`;
+Format Jawaban WAJIB JSON persis seperti ini:
+{"speechText": "Halo Budi! Semoga angka 7 membawa hoki!", "targetNumber": 7}`;
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
     
-    // Clean & Parse JSON
     const cleanJson = responseText.replace(/```json|```/g, '').trim();
     const data = JSON.parse(cleanJson);
 
-    // Kirim ke tampilan browser
+    // Kirim hasil ke tampilan browser
     io.emit('aiResponse', {
       speechText: data.speechText,
       targetNumber: data.targetNumber || Math.floor(Math.random() * 15) + 1
     });
 
   } catch (err) {
-    console.error("AI Error:", err);
-    // Fallback jika API Key belum dipasang / error
-    const targetNum = Math.floor(Math.random() * 15) + 1;
+    console.error("AI Error / Fallback:", err.message);
+    const randomNum = Math.floor(Math.random() * 15) + 1;
     io.emit('aiResponse', {
-      speechText: `Halo ${username}! Taruhan kamu diproses, mari kita putar ke angka ${targetNum}!`,
-      targetNumber: targetNum
+      speechText: `Terima kasih ${username}! Mari kita putar rodanya ke angka ${randomNum}!`,
+      targetNumber: randomNum
     });
   }
 }
 
 io.on('connection', (socket) => {
-  console.log('⚡ Browser terhubung ke Server AI');
+  console.log('⚡ Browser Game Terhubung ke Server AI');
 
-  // Loop simulasi pemicu AI setiap 12 detik (untuk tes live streaming)
-  const autoLoop = setInterval(() => {
-    const dummyUsers = ['Budi', 'Rian', 'Siti', 'Agus', 'Dewi'];
-    const randomUser = dummyUsers[Math.floor(Math.random() * dummyUsers.length)];
+  // Loop Otomatis Simulasi Respon Chat (Setiap 15 Detik) 
+  // Biar layar tidak sepi jika chat sedang lengang
+  const autoChatLoop = setInterval(() => {
+    const dummyNames = ['Rian', 'Budi', 'Siti', 'Agus', 'Dewi', 'Eko'];
+    const randomName = dummyNames[Math.floor(Math.random() * dummyNames.length)];
     const randomGuess = Math.floor(Math.random() * 15) + 1;
     
-    handleUserChat(randomUser, `Saya tebak angka ${randomGuess} min!`);
-  }, 12000);
+    processLiveChat(randomName, `Saya pasang angka ${randomGuess} min!`);
+  }, 15000);
 
   socket.on('disconnect', () => {
-    clearInterval(autoLoop);
-    console.log('❌ Browser terputus');
+    clearInterval(autoChatLoop);
   });
 });
 
