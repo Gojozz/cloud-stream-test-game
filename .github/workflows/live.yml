@@ -1,42 +1,76 @@
-name: Cloud Game YouTube Shorts Live
+name: Marble Race YouTube Vertical Live
 
 on:
   workflow_dispatch:
 
   schedule:
     # 19:00 WIB = 12:00 UTC
-    - cron: '0 12 * * *'
+    - cron: "0 12 * * *"
 
 jobs:
+
   stream:
+
     runs-on: ubuntu-latest
 
-    # Live berjalan maksimal 1 jam
     timeout-minutes: 60
 
     steps:
-      - uses: actions/checkout@v4
+
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb chromium-browser ffmpeg python3 curl
+          sudo apt-get install -y \
+            xvfb \
+            chromium-browser \
+            ffmpeg \
+            python3 \
+            curl
 
-      - name: Xvfb
+      - name: Install Node Dependencies
         run: |
-          Xvfb :99 -screen 0 720x1280x24 -ac +extension GLX +render -noreset >/tmp/xvfb.log 2>&1 &
-          sleep 2
+          npm init -y
+          npm install express socket.io @google/generative-ai
 
-      - name: Web server
+      - name: Start Xvfb
         run: |
-          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/http.log 2>&1 &
-          sleep 2
-          curl -I http://127.0.0.1:8080/index.html
+          Xvfb :99 \
+            -screen 0 720x1280x24 \
+            -ac \
+            +extension GLX \
+            +render \
+            -noreset \
+            >/tmp/xvfb.log 2>&1 &
 
-      - name: Chromium
+          sleep 3
+
+      - name: Start Marble Server
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+        run: |
+
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "WARNING: GEMINI_API_KEY is missing"
+          else
+            echo "Gemini API key detected"
+          fi
+
+          node server.js >/tmp/server.log 2>&1 &
+
+          sleep 5
+
+          curl -I http://127.0.0.1:3000/index.html
+
+      - name: Start Chromium
         env:
           DISPLAY: :99
+
         run: |
+
           chromium-browser \
             --no-sandbox \
             --disable-dev-shm-usage \
@@ -44,18 +78,25 @@ jobs:
             --no-first-run \
             --no-default-browser-check \
             --disable-features=UseDBus \
+            --disable-translate \
+            --disable-extensions \
             --window-size=720,1280 \
             --window-position=0,0 \
-            http://127.0.0.1:8080/index.html >/tmp/chromium.log 2>&1 &
+            --kiosk \
+            http://127.0.0.1:3000/index.html \
+            >/tmp/chromium.log 2>&1 &
 
-          sleep 8
+          sleep 10
 
-      - name: Verify capture
+      - name: Verify Display
         env:
           DISPLAY: :99
+
         run: |
+
           ffmpeg \
             -hide_banner \
+            -loglevel error \
             -f x11grab \
             -video_size 720x1280 \
             -framerate 30 \
@@ -65,11 +106,15 @@ jobs:
 
           test -s /tmp/frame.png
 
+          echo "Vertical display capture OK"
+
       - name: Stream to YouTube
         env:
           DISPLAY: :99
           STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+
         run: |
+
           test -n "$STREAM_KEY"
 
           ffmpeg \
@@ -90,13 +135,27 @@ jobs:
             -g 60 \
             -keyint_min 60 \
             -sc_threshold 0 \
-            -b:v 1800k \
-            -minrate 1800k \
-            -maxrate 1800k \
-            -bufsize 3600k \
+            -b:v 2500k \
+            -minrate 2500k \
+            -maxrate 2500k \
+            -bufsize 5000k \
             -c:a aac \
             -b:a 128k \
             -ar 44100 \
             -ac 2 \
             -f flv \
             "rtmps://a.rtmps.youtube.com/live2/${STREAM_KEY}"
+
+      - name: Debug Logs
+        if: always()
+
+        run: |
+
+          echo "========== SERVER =========="
+          tail -100 /tmp/server.log || true
+
+          echo "========== CHROMIUM =========="
+          tail -100 /tmp/chromium.log || true
+
+          echo "========== XVFB =========="
+          tail -100 /tmp/xvfb.log || true

@@ -1,172 +1,660 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marble Race Live Shorts</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
-        body { 
-            background: #0a0c14; 
-            color: #fff; 
-            width: 720px; 
-            height: 1280px; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 30px 20px; 
-            overflow: hidden; 
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marble Race Live</title>
 
-        /* HEADER */
-        .header { text-align: center; margin-top: 10px; }
-        .title { 
-            font-size: 3.5rem; 
-            font-weight: 900; 
-            letter-spacing: 2px; 
-            color: #ffb703;
-            text-shadow: 0 0 20px rgba(255, 183, 3, 0.6); 
-        }
-        .subtitle { 
-            color: #00f0ff; 
-            font-weight: 700; 
-            font-size: 1.2rem; 
-            text-transform: uppercase; 
-            letter-spacing: 4px; 
-        }
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
-        /* TRACK BALAPAN */
-        .track-container {
-            width: 100%;
-            height: 800px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 4px solid #ffb703;
-            border-radius: 24px;
-            position: relative;
-            overflow: hidden;
-        }
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #05070d;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+}
 
-        /* FINISH LINE */
-        .finish-line {
-            position: absolute;
-            bottom: 30px;
-            width: 100%;
-            height: 25px;
-            background: repeating-linear-gradient(45deg, #fff, #fff 15px, #000 15px, #000 30px);
-            border-top: 3px solid #ff0055;
-            border-bottom: 3px solid #ff0055;
-        }
+body {
+    width: 720px;
+    height: 1280px;
+    margin: 0 auto;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 15%, #17264d 0%, #080b14 42%, #030408 100%);
+}
 
-        /* MARBLE */
-        .marble {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            position: absolute;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 900;
-            font-size: 0.9rem;
-            color: #000;
-            transition: top 1s ease-in-out;
-            box-shadow: 0 0 15px rgba(255,255,255,0.8);
-            border: 3px solid #fff;
-        }
+/* HEADER */
 
-        /* AI HOST BANNER */
-        .ai-banner {
-            width: 100%;
-            background: #8a2be2;
-            border-radius: 20px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
-        }
-        
-        .ai-badge { 
-            background: #fff; 
-            color: #8a2be2; 
-            font-weight: 900; 
-            padding: 6px 14px; 
-            border-radius: 20px; 
-            font-size: 0.85rem; 
-            width: fit-content;
-        }
+.header {
+    height: 145px;
+    padding: 22px 25px 10px;
+    text-align: center;
+}
 
-        .ai-speech { 
-            font-size: 1.3rem; 
-            font-weight: 700; 
-            color: #fff; 
-            line-height: 1.3;
-        }
-    </style>
+.live {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    background: #ff1744;
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    box-shadow: 0 0 20px rgba(255,23,68,.65);
+}
+
+.title {
+    margin-top: 8px;
+    font-size: 52px;
+    line-height: 1;
+    font-weight: 1000;
+    letter-spacing: 3px;
+    color: #ffd166;
+    text-shadow:
+        0 0 8px rgba(255,209,102,.8),
+        0 0 25px rgba(255,140,0,.5);
+}
+
+.subtitle {
+    margin-top: 7px;
+    color: #67e8f9;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 4px;
+}
+
+/* MAIN */
+
+.main {
+    height: 825px;
+    display: flex;
+    gap: 14px;
+    padding: 0 18px;
+}
+
+/* LEADERBOARD */
+
+.leaderboard {
+    width: 170px;
+    height: 100%;
+    border: 2px solid rgba(255,255,255,.15);
+    border-radius: 22px;
+    padding: 15px 10px;
+    background: rgba(10,14,28,.9);
+    box-shadow: 0 0 30px rgba(0,0,0,.45);
+}
+
+.lb-title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 900;
+    color: #ffd166;
+    margin-bottom: 12px;
+}
+
+.player {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 6px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.06);
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.player.active {
+    background: rgba(255,209,102,.18);
+    border: 1px solid rgba(255,209,102,.5);
+}
+
+.dot {
+    width: 19px;
+    height: 19px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid white;
+}
+
+/* TRACK */
+
+.track {
+    position: relative;
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+    border: 5px solid #ffd166;
+    border-radius: 30px;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            rgba(255,255,255,.025) 0px,
+            rgba(255,255,255,.025) 30px,
+            rgba(255,255,255,.01) 30px,
+            rgba(255,255,255,.01) 60px
+        ),
+        linear-gradient(#111827,#070a12);
+    box-shadow:
+        inset 0 0 45px rgba(0,0,0,.9),
+        0 0 30px rgba(255,209,102,.16);
+}
+
+/* TRACK CENTER LIGHT */
+
+.track::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: rgba(255,255,255,.08);
+}
+
+/* START */
+
+.start-line {
+    position: absolute;
+    top: 18px;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: #00e5ff;
+    box-shadow: 0 0 15px #00e5ff;
+}
+
+/* FINISH */
+
+.finish {
+    position: absolute;
+    bottom: 25px;
+    left: 0;
+    right: 0;
+    height: 44px;
+    background:
+        conic-gradient(
+            #fff 25%,
+            #111 0 50%,
+            #fff 0 75%,
+            #111 0
+        ) 0 0 / 44px 44px;
+    border-top: 4px solid #ff1744;
+    border-bottom: 4px solid #ff1744;
+    box-shadow: 0 0 25px rgba(255,23,68,.7);
+}
+
+.finish-label {
+    position: absolute;
+    bottom: 76px;
+    width: 100%;
+    text-align: center;
+    font-weight: 1000;
+    font-size: 17px;
+    letter-spacing: 4px;
+    color: #ff526d;
+}
+
+/* MARBLES */
+
+.marble {
+    position: absolute;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+
+    font-size: 11px;
+    font-weight: 1000;
+    color: white;
+    text-shadow: 0 2px 4px #000;
+
+    border: 3px solid white;
+
+    box-shadow:
+        inset -8px -10px 12px rgba(0,0,0,.35),
+        inset 8px 7px 10px rgba(255,255,255,.5),
+        0 0 18px rgba(255,255,255,.45);
+
+    transition:
+        top .45s cubic-bezier(.2,.8,.2,1),
+        left .35s ease;
+}
+
+.marble::after {
+    content: "";
+    position: absolute;
+    width: 15px;
+    height: 10px;
+    top: 8px;
+    left: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.8);
+    transform: rotate(-30deg);
+}
+
+/* COUNTDOWN */
+
+.countdown {
+    position: absolute;
+    z-index: 20;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.countdown span {
+    font-size: 110px;
+    font-weight: 1000;
+    color: #fff;
+    text-shadow:
+        0 0 20px #00e5ff,
+        0 0 60px #00e5ff;
+    opacity: 0;
+    transform: scale(.5);
+}
+
+/* WINNER */
+
+.winner {
+    position: absolute;
+    z-index: 30;
+    left: 15px;
+    right: 15px;
+    top: 40%;
+    padding: 18px;
+    text-align: center;
+    border-radius: 18px;
+    background: rgba(0,0,0,.82);
+    border: 2px solid #ffd166;
+    box-shadow: 0 0 40px rgba(255,209,102,.45);
+    opacity: 0;
+    transform: scale(.8);
+    pointer-events: none;
+}
+
+.winner.show {
+    opacity: 1;
+    transform: scale(1);
+    transition: .35s ease;
+}
+
+.winner-small {
+    color: #67e8f9;
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: 3px;
+}
+
+.winner-name {
+    margin-top: 5px;
+    color: #ffd166;
+    font-size: 32px;
+    font-weight: 1000;
+}
+
+/* AI */
+
+.ai {
+    height: 210px;
+    margin: 15px 18px 0;
+    border-radius: 25px;
+    padding: 18px 20px;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(116,38,255,.85),
+            rgba(0,198,255,.75)
+        );
+    border: 2px solid rgba(255,255,255,.3);
+    box-shadow: 0 0 35px rgba(0,198,255,.2);
+}
+
+.ai-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ai-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    color: #702cff;
+    font-size: 25px;
+    box-shadow: 0 0 20px rgba(255,255,255,.7);
+}
+
+.ai-name {
+    font-size: 22px;
+    font-weight: 1000;
+}
+
+.ai-status {
+    margin-top: 2px;
+    color: #d8faff;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.speech {
+    margin-top: 13px;
+    font-size: 21px;
+    line-height: 1.3;
+    font-weight: 800;
+}
+
+/* FOOTER */
+
+.footer {
+    height: 85px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 22px;
+    color: #aab3c5;
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.round {
+    color: #ffd166;
+}
+</style>
 </head>
+
 <body>
 
-    <div class="header">
-        <div class="title">MARBLE RACE</div>
-        <div class="subtitle">Ketik Namamu Di Chat!</div>
+<div class="header">
+    <div class="live">● LIVE</div>
+    <div class="title">MARBLE RACE</div>
+    <div class="subtitle">WHO WILL WIN?</div>
+</div>
+
+<div class="main">
+
+    <div class="leaderboard">
+        <div class="lb-title">RANKING</div>
+
+        <div class="player" id="p1">
+            <div class="dot" style="background:#ff1744"></div>
+            Rizal
+        </div>
+
+        <div class="player" id="p2">
+            <div class="dot" style="background:#00e5ff"></div>
+            Budi
+        </div>
+
+        <div class="player" id="p3">
+            <div class="dot" style="background:#ffd166"></div>
+            Siti
+        </div>
+
+        <div class="player" id="p4">
+            <div class="dot" style="background:#2ecc71"></div>
+            Agus
+        </div>
+
+        <div class="player" id="p5">
+            <div class="dot" style="background:#b86bff"></div>
+            Dewi
+        </div>
     </div>
 
-    <div class="track-container">
-        <div class="finish-line"></div>
-        <div class="marble" id="m1" style="background:#ff0055; top:40px; left:60px;">Rizal</div>
-        <div class="marble" id="m2" style="background:#00f0ff; top:40px; left:200px;">Budi</div>
-        <div class="marble" id="m3" style="background:#ffb703; top:40px; left:340px;">Siti</div>
-        <div class="marble" id="m4" style="background:#2ecc71; top:40px; left:480px;">Agus</div>
+    <div class="track" id="track">
+
+        <div class="start-line"></div>
+
+        <div class="countdown">
+            <span id="countdownText">3</span>
+        </div>
+
+        <div class="finish-label">FINISH</div>
+        <div class="finish"></div>
+
+        <div class="marble" id="m1" style="background:#ff1744">RIZ</div>
+        <div class="marble" id="m2" style="background:#00bcd4">BUD</div>
+        <div class="marble" id="m3" style="background:#e0a900">SIT</div>
+        <div class="marble" id="m4" style="background:#20a85a">AGU</div>
+        <div class="marble" id="m5" style="background:#8e44ff">DEW</div>
+
+        <div class="winner" id="winner">
+            <div class="winner-small">🏆 WINNER</div>
+            <div class="winner-name" id="winnerName">---</div>
+        </div>
+
     </div>
 
-    <div class="ai-banner">
-        <div class="ai-badge">🤖 LUNA AI HOST</div>
-        <div class="ai-speech" id="aiSpeech">Balapan kelereng segera dimulai! Siapa yang bakal meluncur paling kencang?</div>
+</div>
+
+<div class="ai">
+
+    <div class="ai-top">
+        <div class="ai-avatar">🤖</div>
+
+        <div>
+            <div class="ai-name">LUNA AI HOST</div>
+            <div class="ai-status">LIVE COMMENTARY • ONLINE</div>
+        </div>
     </div>
 
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script>
-        const aiSpeech = document.getElementById('aiSpeech');
-        const m1 = document.getElementById('m1');
-        const m2 = document.getElementById('m2');
-        const m3 = document.getElementById('m3');
-        const m4 = document.getElementById('m4');
+    <div class="speech" id="aiSpeech">
+        Welcome to Marble Race Live! Who will take the crown?
+    </div>
 
-        // Safe Web Audio API
-        let audioCtx;
-        function playTone(freq, duration) {
-            try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + duration);
-            } catch(e){}
+</div>
+
+<div class="footer">
+    <div>🔥 LIVE MARBLE BATTLE</div>
+    <div class="round">ROUND <span id="round">1</span></div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+
+const socket = io("http://127.0.0.1:3000");
+
+const track = document.getElementById("track");
+const speech = document.getElementById("aiSpeech");
+const winnerBox = document.getElementById("winner");
+const winnerName = document.getElementById("winnerName");
+const roundLabel = document.getElementById("round");
+
+const marbles = [
+    document.getElementById("m1"),
+    document.getElementById("m2"),
+    document.getElementById("m3"),
+    document.getElementById("m4"),
+    document.getElementById("m5")
+];
+
+const names = [
+    "Rizal",
+    "Budi",
+    "Siti",
+    "Agus",
+    "Dewi"
+];
+
+let currentRound = 1;
+let racing = false;
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function resetMarbles() {
+
+    const width = track.clientWidth;
+
+    marbles.forEach((marble, i) => {
+
+        const laneWidth = width / marbles.length;
+
+        marble.style.left =
+            (laneWidth * i + laneWidth / 2 - 29) + "px";
+
+        marble.style.top = "35px";
+    });
+
+}
+
+function countdown() {
+
+    return new Promise(async resolve => {
+
+        const el = document.getElementById("countdownText");
+
+        for (let i = 3; i >= 1; i--) {
+
+            el.innerText = i;
+
+            el.style.opacity = "1";
+            el.style.transform = "scale(1)";
+
+            await sleep(650);
+
+            el.style.opacity = "0";
+            el.style.transform = "scale(.5)";
+
+            await sleep(250);
         }
 
-        // Connect Socket
-        try {
-            const socket = io('http://127.0.0.1:3000');
+        el.innerText = "GO!";
 
-            socket.on('aiResponse', (data) => {
-                if (data.speechText) aiSpeech.innerText = data.speechText;
-                
-                // Animasi Pergerakan Kelereng
-                m1.style.top = (Math.random() * 620 + 50) + "px";
-                m2.style.top = (Math.random() * 620 + 50) + "px";
-                m3.style.top = (Math.random() * 620 + 50) + "px";
-                m4.style.top = (Math.random() * 620 + 50) + "px";
+        el.style.opacity = "1";
+        el.style.transform = "scale(1)";
 
-                playTone(440, 0.2);
-            });
-        } catch(e) {}
-    </script>
+        await sleep(500);
+
+        el.style.opacity = "0";
+
+        resolve();
+    });
+}
+
+async function localRace() {
+
+    if (racing) return;
+
+    racing = true;
+
+    winnerBox.classList.remove("show");
+
+    resetMarbles();
+
+    await sleep(500);
+
+    await countdown();
+
+    const finishY = track.clientHeight - 120;
+
+    const positions = marbles.map(() => 0);
+
+    let winnerIndex = -1;
+
+    while (winnerIndex === -1) {
+
+        for (let i = 0; i < marbles.length; i++) {
+
+            positions[i] += 10 + Math.random() * 20;
+
+            if (positions[i] >= finishY) {
+                positions[i] = finishY;
+                winnerIndex = i;
+            }
+
+            marbles[i].style.top = positions[i] + "px";
+        }
+
+        await sleep(120);
+    }
+
+    winnerName.innerText = names[winnerIndex];
+
+    winnerBox.classList.add("show");
+
+    roundLabel.innerText = currentRound;
+
+    racing = false;
+}
+
+/*
+    Server controls the official race.
+    The browser only displays it.
+*/
+
+socket.on("raceStart", data => {
+
+    currentRound = data.round || currentRound;
+
+    roundLabel.innerText = currentRound;
+
+    speech.innerText =
+        data.message ||
+        "The race is starting!";
+
+    localRace();
+});
+
+socket.on("aiResponse", data => {
+
+    if (data.speechText) {
+        speech.innerText = data.speechText;
+    }
+});
+
+socket.on("raceWinner", data => {
+
+    if (data.playerName) {
+
+        winnerName.innerText = data.playerName;
+
+        winnerBox.classList.add("show");
+    }
+});
+
+socket.on("raceUpdate", data => {
+
+    if (!data.positions) return;
+
+    data.positions.forEach((position, index) => {
+
+        if (marbles[index]) {
+
+            marbles[index].style.top =
+                position + "px";
+        }
+    });
+});
+
+socket.on("connect", () => {
+
+    speech.innerText =
+        "Luna AI is online. Get ready for the next Marble Race!";
+});
+
+resetMarbles();
+
+</script>
+
 </body>
 </html>
