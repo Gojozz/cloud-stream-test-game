@@ -1,0 +1,173 @@
+name: Test YouTube Live Chat
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-chat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install YouTube API
+        run: npm install googleapis
+
+      - name: Test YouTube Live Chat
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: |
+          node <<'NODE'
+          const { google } = require("googleapis");
+
+          const {
+            YOUTUBE_CLIENT_ID,
+            YOUTUBE_CLIENT_SECRET,
+            YOUTUBE_REFRESH_TOKEN
+          } = process.env;
+
+          if (
+            !YOUTUBE_CLIENT_ID ||
+            !YOUTUBE_CLIENT_SECRET ||
+            !YOUTUBE_REFRESH_TOKEN
+          ) {
+            console.error("ERROR: YouTube OAuth secrets belum lengkap.");
+            process.exit(1);
+          }
+
+          async function main() {
+            const auth = new google.auth.OAuth2(
+              YOUTUBE_CLIENT_ID,
+              YOUTUBE_CLIENT_SECRET
+            );
+
+            auth.setCredentials({
+              refresh_token: YOUTUBE_REFRESH_TOKEN
+            });
+
+            const youtube = google.youtube({
+              version: "v3",
+              auth
+            });
+
+            console.log("================================");
+            console.log("YOUTUBE OAUTH TEST");
+            console.log("================================");
+
+            const response =
+              await youtube.liveBroadcasts.list({
+                part: "id,snippet,status",
+                mine: true,
+                broadcastStatus: "active",
+                maxResults: 10
+              });
+
+            const broadcasts = response.data.items || [];
+
+            console.log(
+              "Active broadcasts:",
+              broadcasts.length
+            );
+
+            if (!broadcasts.length) {
+              console.log("");
+              console.log("NO ACTIVE LIVE BROADCAST");
+              console.log(
+                "Jalankan workflow live terlebih dahulu."
+              );
+              console.log("");
+              return;
+            }
+
+            const live = broadcasts[0];
+
+            const title =
+              live.snippet?.title || "(untitled)";
+
+            const liveChatId =
+              live.snippet?.liveChatId || "";
+
+            console.log("LIVE FOUND");
+            console.log("Title:", title);
+            console.log("Broadcast ID:", live.id);
+
+            if (!liveChatId) {
+              console.error(
+                "ERROR: liveChatId tidak tersedia."
+              );
+              process.exit(1);
+            }
+
+            console.log(
+              "Live Chat ID: FOUND"
+            );
+
+            const chat =
+              await youtube.liveChatMessages.list({
+                liveChatId,
+                part: "id,snippet,authorDetails",
+                maxResults: 20
+              });
+
+            const messages =
+              chat.data.items || [];
+
+            console.log("");
+            console.log(
+              "Recent chat messages:",
+              messages.length
+            );
+            console.log(
+              "================================"
+            );
+
+            for (const message of messages) {
+              const author =
+                message.authorDetails?.displayName ||
+                "Viewer";
+
+              const text =
+                message.snippet?.displayMessage ||
+                "";
+
+              console.log(
+                `${author}: ${text}`
+              );
+            }
+
+            console.log(
+              "================================"
+            );
+            console.log(
+              "YOUTUBE CHAT TEST SUCCESS"
+            );
+          }
+
+          main().catch(error => {
+            console.error("");
+            console.error("YOUTUBE API ERROR");
+
+            if (error.response?.data) {
+              console.error(
+                JSON.stringify(
+                  error.response.data,
+                  null,
+                  2
+                )
+              );
+            } else {
+              console.error(error.message);
+            }
+
+            process.exit(1);
+          });
+          NODE
