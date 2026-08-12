@@ -5,36 +5,218 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super Spin Live</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: #0b0c10; color: #fff; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; align-items: center; overflow: hidden; padding: 20px; }
+        :root {
+            --bg-color: #0d0f17;
+            --card-bg: rgba(22, 27, 38, 0.85);
+            --accent-gold: #ffb703;
+            --accent-purple: #8a2be2;
+            --accent-cyan: #00f0ff;
+            --text-color: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', 'Segoe UI', Roboto, sans-serif; }
         
-        /* Header Title */
-        .header { text-align: center; margin-top: 10px; }
-        .title { font-size: 3rem; font-weight: 900; letter-spacing: 2px; color: #f39c12; text-shadow: 0 0 20px rgba(243, 156, 18, 0.6); }
-        .subtitle { color: #8e44ad; font-weight: bold; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 3px; }
+        body { 
+            background: radial-gradient(circle at center, #1b1e2e 0%, #090a0f 100%); 
+            color: var(--text-color); 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            align-items: center; 
+            overflow: hidden; 
+            padding: 20px; 
+        }
 
-        /* Main Game Layout */
-        .main-container { display: flex; width: 100%; max-width: 1200px; justify-content: space-between; align-items: center; flex: 1; }
+        /* HEADER */
+        .header { text-align: center; margin-top: 5px; }
+        .title { 
+            font-size: 3.2rem; 
+            font-weight: 900; 
+            letter-spacing: 3px; 
+            background: linear-gradient(180deg, #fff 20%, var(--accent-gold) 100%); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            text-shadow: 0 0 30px rgba(255, 183, 3, 0.5); 
+        }
+        .subtitle { 
+            color: var(--accent-cyan); 
+            font-weight: 700; 
+            font-size: 1rem; 
+            text-transform: uppercase; 
+            letter-spacing: 5px; 
+            margin-top: -5px;
+        }
+
+        /* MAIN CONTAINER */
+        .main-container { 
+            display: flex; 
+            width: 100%; 
+            max-width: 1240px; 
+            justify-content: space-between; 
+            align-items: center; 
+            flex: 1; 
+            margin: 10px 0;
+        }
+
+        /* PLAYER CARDS */
+        .player-card { 
+            background: var(--card-bg); 
+            border: 2px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 20px; 
+            padding: 20px; 
+            width: 280px; 
+            text-align: center; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6); 
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        .player-card.active { 
+            border-color: var(--accent-gold); 
+            box-shadow: 0 0 25px rgba(255, 183, 3, 0.3); 
+        }
+        .avatar { font-size: 3.5rem; margin-bottom: 5px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
+        .player-name { font-size: 1.6rem; font-weight: 800; letter-spacing: 1px; }
+        .balance { color: #2ecc71; font-size: 1.3rem; font-weight: 700; margin: 5px 0 15px 0; }
         
-        /* Player Panels */
-        .player-card { background: rgba(22, 27, 34, 0.8); border: 2px solid #1f2937; border-radius: 16px; padding: 20px; width: 280px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        .player-card.active { border-color: #f39c12; box-shadow: 0 0 15px rgba(243, 156, 18, 0.3); }
-        .avatar { font-size: 3rem; margin-bottom: 5px; }
-        .player-name { font-size: 1.5rem; font-weight: bold; }
-        .balance { color: #2ecc71; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; }
+        .bet-box {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 10px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        .bet-number { color: var(--accent-cyan); font-weight: 800; font-size: 1.2rem; }
 
-        /* Wheel Section */
-        .wheel-container { position: relative; width: 380px; height: 380px; display: flex; justify-content: center; align-items: center; }
-        .wheel { width: 100%; height: 100%; border-radius: 50%; border: 10px solid #f39c12; position: relative; transition: transform 4s cubic-bezier(0.15, 0.99, 0.35, 1); box-shadow: 0 0 30px rgba(243, 156, 18, 0.4); background: conic-gradient(#1f242d 0deg 24deg, #2c3e50 24deg 48deg, #1f242d 48deg 72deg, #2c3e50 72deg 96deg, #1f242d 96deg 120deg, #2c3e50 120deg 144deg, #1f242d 144deg 168deg, #2c3e50 168deg 192deg, #1f242d 192deg 216deg, #2c3e50 216deg 240deg, #1f242d 240deg 264deg, #2c3e50 264deg 288deg, #1f242d 288deg 312deg, #2c3e50 312deg 336deg, #1f242d 336deg 360deg); }
-        .pointer { position: absolute; top: -15px; width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid #e74c3c; z-index: 10; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
+        /* WHEEL CONTAINER */
+        .wheel-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
 
-        /* AI Host Banner (Respon Chat Live) */
-        .ai-host-banner { width: 100%; max-width: 1000px; background: linear-gradient(90deg, #8e44ad, #3498db); border-radius: 12px; padding: 15px 25px; display: flex; align-items: center; gap: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); margin-bottom: 10px; }
-        .ai-badge { background: #fff; color: #8e44ad; font-weight: 900; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; text-transform: uppercase; }
-        .ai-speech { font-size: 1.2rem; font-weight: bold; color: #fff; }
+        .jackpot-banner {
+            background: linear-gradient(90deg, #ff007f, #7928ca);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.5);
+            text-transform: uppercase;
+        }
+
+        .wheel-container { 
+            position: relative; 
+            width: 360px; 
+            height: 360px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        
+        .wheel-outer-ring {
+            position: absolute;
+            width: 380px;
+            height: 380px;
+            border-radius: 50%;
+            border: 6px dashed var(--accent-gold);
+            animation: rotateRing 40s linear infinite;
+            opacity: 0.7;
+        }
+
+        @keyframes rotateRing {
+            100% { transform: rotate(360deg); }
+        }
+
+        .wheel { 
+            width: 100%; 
+            height: 100%; 
+            border-radius: 50%; 
+            border: 8px solid var(--accent-gold); 
+            position: relative; 
+            transition: transform 4s cubic-bezier(0.15, 0.99, 0.35, 1); 
+            box-shadow: 0 0 40px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.8); 
+            background: conic-gradient(
+                #e74c3c 0deg 24deg, #3498db 24deg 48deg, #2ecc71 48deg 72deg, #f1c40f 72deg 96deg,
+                #9b59b6 96deg 120deg, #1abc9c 120deg 144deg, #e67e22 144deg 168deg, #34495e 168deg 192deg,
+                #e74c3c 192deg 216deg, #3498db 216deg 240deg, #2ecc71 240deg 264deg, #f1c40f 264deg 288deg,
+                #9b59b6 288deg 312deg, #1abc9c 312deg 336deg, #e67e22 336deg 360deg
+            ); 
+        }
+
+        .wheel-center {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background: radial-gradient(circle, #fff, #888);
+            border-radius: 50%;
+            border: 4px solid var(--accent-gold);
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            color: #000;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        .pointer { 
+            position: absolute; 
+            top: -18px; 
+            width: 0; 
+            height: 0; 
+            border-left: 18px solid transparent; 
+            border-right: 18px solid transparent; 
+            border-top: 36px solid #ff0055; 
+            z-index: 10; 
+            filter: drop-shadow(0 5px 8px rgba(0,0,0,0.7)); 
+        }
+
+        /* AI HOST SPEECH BANNER */
+        .ai-host-banner { 
+            width: 100%; 
+            max-width: 1100px; 
+            background: linear-gradient(90deg, rgba(138,43,226,0.9), rgba(0,240,255,0.9)); 
+            border-radius: 16px; 
+            padding: 16px 25px; 
+            display: flex; 
+            align-items: center; 
+            gap: 20px; 
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5); 
+            backdrop-filter: blur(5px);
+        }
+        
+        .ai-badge { 
+            background: #fff; 
+            color: var(--accent-purple); 
+            font-weight: 900; 
+            padding: 8px 16px; 
+            border-radius: 30px; 
+            font-size: 0.85rem; 
+            letter-spacing: 1.5px;
+            text-transform: uppercase; 
+            white-space: nowrap;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .ai-speech { 
+            font-size: 1.25rem; 
+            font-weight: 700; 
+            color: #fff; 
+            line-height: 1.4;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
+
+    <!-- ELEMENT AUDIO -->
+    <audio id="audioBgm" src="assets/bgm.mp3" loop autoplay volume="0.3"></audio>
+    <audio id="audioSpin" src="assets/spin.wav"></audio>
+    <audio id="audioWin" src="assets/win.mp3"></audio>
 
     <div class="header">
         <div class="title">SUPER SPIN</div>
@@ -47,12 +229,18 @@
             <div class="avatar">🦊</div>
             <div class="player-name">MAX</div>
             <div class="balance">$10,000</div>
+            <div class="bet-box">TEBAKAN: <span class="bet-number" id="p1Bet">ANGKA 7</span></div>
         </div>
 
-        <!-- Roda Spin -->
-        <div class="wheel-container">
-            <div class="pointer"></div>
-            <div class="wheel" id="wheel"></div>
+        <!-- Wheel Section -->
+        <div class="wheel-section">
+            <div class="jackpot-banner" id="timerStatus">NEXT SPIN IN: 15S</div>
+            <div class="wheel-container">
+                <div class="pointer"></div>
+                <div class="wheel-outer-ring"></div>
+                <div class="wheel" id="wheel"></div>
+                <div class="wheel-center">SPIN</div>
+            </div>
         </div>
 
         <!-- Player 2 -->
@@ -60,33 +248,92 @@
             <div class="avatar">🐰</div>
             <div class="player-name">LEO</div>
             <div class="balance">$10,000</div>
+            <div class="bet-box">TEBAKAN: <span class="bet-number" id="p2Bet">ANGKA 12</span></div>
         </div>
     </div>
 
-    <!-- Banner Respons AI Host LUNA -->
+    <!-- AI Host Banner -->
     <div class="ai-host-banner">
-        <div class="ai-badge">LUNA AI HOST</div>
-        <div class="ai-speech" id="aiSpeech">Selamat datang penonton! Tulis angka pilihanmu di Live Chat!</div>
+        <div class="ai-badge">🤖 LUNA AI HOST</div>
+        <div class="ai-speech" id="aiSpeech">Selamat datang di Super Spin Live! Tulis angka tebakanmu (1-15) di Live Chat!</div>
     </div>
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
-        // Hubungkan ke Node server AI di port 3000
-        const socket = io('http://127.0.0.1:3000');
         const wheel = document.getElementById('wheel');
         const aiSpeech = document.getElementById('aiSpeech');
+        const timerStatus = document.getElementById('timerStatus');
+        const p1Bet = document.getElementById('p1Bet');
+        const p2Bet = document.getElementById('p2Bet');
 
-        // Terima perintah putar roda & ucapan dari AI Host
-        socket.on('aiResponse', (data) => {
-            if (data.speechText) {
-                aiSpeech.innerText = data.speechText;
+        // Audio Objects
+        const audioBgm = document.getElementById('audioBgm');
+        const audioSpin = document.getElementById('audioSpin');
+        const audioWin = document.getElementById('audioWin');
+
+        // Autoplay background music
+        document.addEventListener('click', () => { audioBgm.play().catch(()=>{}); }, { once: true });
+        window.addEventListener('DOMContentLoaded', () => { audioBgm.play().catch(()=>{}); });
+
+        let currentRotation = 0;
+
+        // Socket Connection
+        let socket;
+        try {
+            socket = io('http://127.0.0.1:3000');
+
+            socket.on('aiResponse', (data) => {
+                if (data.speechText) {
+                    aiSpeech.innerText = data.speechText;
+                }
+                if (data.targetNumber) {
+                    spinWheelTo(data.targetNumber);
+                }
+            });
+        } catch(e) {
+            console.log("Socket offline, running standalone mode.");
+        }
+
+        function spinWheelTo(number) {
+            // Mainkan Suara Putar Roda
+            try {
+                audioSpin.currentTime = 0;
+                audioSpin.play().catch(() => {});
+            } catch(e) {}
+
+            const degreesPerSegment = 360 / 15;
+            const targetDegree = (number - 1) * degreesPerSegment;
+            currentRotation += 1800 + (360 - (currentRotation % 360)) + targetDegree;
+            
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+            timerStatus.innerText = `MEMUTAR KE ANGKA ${number}...`;
+
+            setTimeout(() => {
+                timerStatus.innerText = `WINNER NUMBER: ${number}!`;
+                
+                // Mainkan Suara Kemenangan / Hasil
+                try {
+                    audioWin.currentTime = 0;
+                    audioWin.play().catch(() => {});
+                } catch(e) {}
+
+            }, 4000);
+        }
+
+        // Loop Timed Spin
+        let countdown = 15;
+        setInterval(() => {
+            countdown--;
+            if (countdown <= 0) {
+                countdown = 15;
+                const randomNum = Math.floor(Math.random() * 15) + 1;
+                p1Bet.innerText = "ANGKA " + (Math.floor(Math.random() * 15) + 1);
+                p2Bet.innerText = "ANGKA " + (Math.floor(Math.random() * 15) + 1);
+                spinWheelTo(randomNum);
+            } else if (countdown > 4) {
+                timerStatus.innerText = `NEXT SPIN IN: ${countdown}S`;
             }
-            if (data.targetNumber) {
-                const degreesPerNumber = 360 / 15;
-                const rotation = 3600 + ((data.targetNumber - 1) * degreesPerNumber);
-                wheel.style.transform = `rotate(${rotation}deg)`;
-            }
-        });
+        }, 1000);
     </script>
 </body>
 </html>
