@@ -1,7 +1,6 @@
 name: Cloud Game YouTube Live
 
 on:
-  # Otomatis jalan 1 jam sehari (19.00 WIB / 12.00 UTC)
   schedule:
     - cron: '0 12 * * *'
   workflow_dispatch:
@@ -14,47 +13,58 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install
+      - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb chromium-browser ffmpeg python3 curl
 
-      # Setup Node.js untuk AI
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install Node Dependencies
+      - name: Install Node Packages
         run: |
-          npm install
+          npm install || true
 
-      - name: Start AI Server
+      - name: Start AI Server (Background)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           node server.js >/tmp/node.log 2>&1 &
-          sleep 2
+          sleep 3
 
-      - name: Xvfb
+      - name: Start Xvfb Virtual Display
         run: |
           Xvfb :99 -screen 0 1280x720x24 -ac +extension GLX +render -noreset >/tmp/xvfb.log 2>&1 &
           sleep 2
 
-      - name: Web server
+      - name: Start Web Server
         run: |
           python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/http.log 2>&1 &
           sleep 2
           curl -I http://127.0.0.1:8080/index.html
 
-      - name: Chromium
+      - name: Start Chromium (With Audio Autoplay Fix)
         env:
           DISPLAY: :99
         run: |
-          chromium-browser --no-sandbox --test-type --kiosk --start-fullscreen --disable-dev-shm-usage --disable-gpu --no-first-run --no-default-browser-check --disable-features=UseDBus --window-size=1280,720 --window-position=0,0 http://127.0.0.1:8080/index.html >/tmp/chromium.log 2>&1 &
+          chromium-browser \
+            --no-sandbox \
+            --test-type \
+            --kiosk \
+            --start-fullscreen \
+            --disable-dev-shm-usage \
+            --disable-gpu \
+            --no-first-run \
+            --no-default-browser-check \
+            --autoplay-policy=no-user-gesture-required \
+            --window-size=1280,720 \
+            --window-position=0,0 \
+            http://127.0.0.1:8080/index.html >/tmp/chromium.log 2>&1 &
           sleep 8
 
-      - name: Verify capture
+      - name: Verify Screen Capture
         env:
           DISPLAY: :99
         run: |
