@@ -1,107 +1,102 @@
-name: YouTube Shorts Live Stream
+name: Cloud Game YouTube Shorts Live
 
 on:
   workflow_dispatch:
+
   schedule:
-    # 19.00 WIB = 12.00 UTC
+    # 19:00 WIB = 12:00 UTC
     - cron: '0 12 * * *'
 
 jobs:
   stream:
     runs-on: ubuntu-latest
+
+    # Live berjalan maksimal 1 jam
     timeout-minutes: 60
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Dependencies
+      - name: Install
         run: |
-          npm install
           sudo apt-get update
-          sudo apt-get install -y ffmpeg xvfb chromium-browser pulseaudio
+          sudo apt-get install -y xvfb chromium-browser ffmpeg python3 curl
 
-      - name: Start Express & Socket.io Server
+      - name: Xvfb
         run: |
-          node server.js &
-          sleep 5
+          Xvfb :99 -screen 0 720x1280x24 -ac +extension GLX +render -noreset >/tmp/xvfb.log 2>&1 &
+          sleep 2
 
-      - name: Start Headless Browser & Stream to YouTube
+      - name: Web server
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/http.log 2>&1 &
+          sleep 2
+          curl -I http://127.0.0.1:8080/index.html
+
+      - name: Chromium
         env:
-          STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
           DISPLAY: :99
         run: |
-          # ==========================================
-          # 1. START PULSEAUDIO
-          # ==========================================
-          pulseaudio --start
-          sleep 2
-
-          # ==========================================
-          # 2. CREATE VERTICAL 720x1280 DISPLAY
-          # ==========================================
-          Xvfb :99 -screen 0 720x1280x24 -ac +extension GLX +render &
-          sleep 2
-
-          # ==========================================
-          # 3. START CHROMIUM - CLEAN STREAM MODE
-          # ==========================================
           chromium-browser \
             --no-sandbox \
-            --disable-setuid-sandbox \
             --disable-dev-shm-usage \
             --disable-gpu \
-            --disable-software-rasterizer \
-            --disable-translate \
-            --disable-features=Translate,TranslateUI,TranslateSubFrames \
-            --disable-extensions \
-            --disable-component-extensions-with-background-pages \
-            --disable-popup-blocking \
-            --disable-notifications \
-            --disable-infobars \
-            --disable-session-crashed-bubble \
-            --disable-restore-session-state \
-            --disable-first-run-ui \
             --no-first-run \
             --no-default-browser-check \
-            --lang=en-US \
-            --accept-lang=en-US \
-            --autoplay-policy=no-user-gesture-required \
+            --disable-features=UseDBus \
             --window-size=720,1280 \
             --window-position=0,0 \
-            --kiosk \
-            http://localhost:3000 &
+            http://127.0.0.1:8080/index.html >/tmp/chromium.log 2>&1 &
 
           sleep 8
 
-          # ==========================================
-          # 4. STREAM TO YOUTUBE
-          # ==========================================
+      - name: Verify capture
+        env:
+          DISPLAY: :99
+        run: |
           ffmpeg \
+            -hide_banner \
             -f x11grab \
-            -draw_mouse 0 \
             -video_size 720x1280 \
             -framerate 30 \
             -i :99.0 \
-            -f pulse \
-            -ac 2 \
-            -i default \
+            -frames:v 1 \
+            -y /tmp/frame.png
+
+          test -s /tmp/frame.png
+
+      - name: Stream to YouTube
+        env:
+          DISPLAY: :99
+          STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+        run: |
+          test -n "$STREAM_KEY"
+
+          ffmpeg \
+            -hide_banner \
+            -loglevel info \
+            -f x11grab \
+            -video_size 720x1280 \
+            -framerate 30 \
+            -draw_mouse 0 \
+            -i :99.0 \
+            -f lavfi \
+            -i anullsrc=channel_layout=stereo:sample_rate=44100 \
             -c:v libx264 \
-            -preset ultrafast \
+            -preset veryfast \
             -tune zerolatency \
-            -g 60 \
-            -keyint_min 30 \
-            -b:v 2500k \
-            -maxrate 2500k \
-            -bufsize 5000k \
             -pix_fmt yuv420p \
+            -r 30 \
+            -g 60 \
+            -keyint_min 60 \
+            -sc_threshold 0 \
+            -b:v 1800k \
+            -minrate 1800k \
+            -maxrate 1800k \
+            -bufsize 3600k \
             -c:a aac \
             -b:a 128k \
             -ar 44100 \
+            -ac 2 \
             -f flv \
-            "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
+            "rtmps://a.rtmps.youtube.com/live2/${STREAM_KEY}"
