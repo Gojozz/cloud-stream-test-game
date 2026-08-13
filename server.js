@@ -247,48 +247,49 @@ async function startYouTubeChat() {
 
     console.log("Looking for active YouTube broadcast...");
 
-    const response =
-      await youtube.liveBroadcasts.list({
-        part: "id,snippet,status",
-        broadcastStatus: "active",
-        maxResults: 10
-      });
+    const response = await youtube.liveBroadcasts.list({
+      part: "id,snippet,status",
+      broadcastStatus: "active",
+      broadcastType: "all",
+      maxResults: 10
+    });
 
-    const broadcasts =
-      response.data.items || [];
+    const broadcasts = response.data.items || [];
 
-    if (!broadcasts.length) {
+    console.log(
+      `Active broadcasts found: ${broadcasts.length}`
+    );
+
+    // Find the first active broadcast that actually has Live Chat
+    const live = broadcasts.find(
+      b => b.snippet?.liveChatId
+    );
+
+    if (!live) {
 
       console.log(
-        "No active YouTube broadcast. Retrying in 15 seconds..."
+        "No active broadcast with Live Chat yet. Retrying in 10 seconds..."
       );
+
+      chatStarted = false;
 
       setTimeout(
         startYouTubeChat,
-        15000
+        10000
       );
 
       return;
     }
 
-    const live = broadcasts[0];
+    const liveChatId = live.snippet.liveChatId;
 
-    const liveChatId =
-      live.snippet?.liveChatId;
+    console.log(
+      `YouTube broadcast found: ${live.id}`
+    );
 
-    if (!liveChatId) {
-
-      console.log(
-        "Active broadcast has no Live Chat. Retrying..."
-      );
-
-      setTimeout(
-        startYouTubeChat,
-        15000
-      );
-
-      return;
-    }
+    console.log(
+      `Live Chat ID found: ${liveChatId}`
+    );
 
     console.log(
       "YouTube Live Chat connected."
@@ -296,7 +297,7 @@ async function startYouTubeChat() {
 
     chatStarted = true;
 
-    startChatStream(
+    await startChatStream(
       youtube,
       liveChatId
     );
@@ -312,7 +313,7 @@ async function startYouTubeChat() {
 
     setTimeout(
       startYouTubeChat,
-      15000
+      10000
     );
   }
 }
