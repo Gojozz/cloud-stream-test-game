@@ -2,6 +2,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const { google } = require("googleapis");
+const Groq = require("groq-sdk");
 
 const app = express();
 const server = http.createServer(app);
@@ -16,26 +17,23 @@ app.use(express.static("."));
    LUNA AI
 ========================================================= */
 
-let model = null;
+let groq = null;
 
 try {
-  const { GoogleGenerativeAI } = require("@google/generative-ai");
-
-  const key = process.env.GEMINI_API_KEY || "";
+  const key = process.env.GROQ_API_KEY || "";
 
   if (key) {
-    const genAI = new GoogleGenerativeAI(key);
-
-    model = genAI.getGenerativeModel({
-      model: "gemini-3.5-flash-lite"
+    groq = new Groq({
+      apiKey: key
     });
 
-    console.log("LUNA AI ONLINE");
+    console.log("LUNA AI ONLINE - GROQ");
   } else {
-    console.log("GEMINI_API_KEY not found - fallback mode");
+    console.log("GROQ_API_KEY not found - fallback mode");
   }
+
 } catch (error) {
-  console.log("Gemini unavailable:", error.message);
+  console.log("Groq unavailable:", error.message);
 }
 
 /* =========================================================
@@ -161,36 +159,48 @@ async function lunaComment(event, force = false) {
 
   lastLunaCall = now;
 
-  if (!model) {
+  if (!groq) {
     return fallbackComment();
   }
 
   try {
-    const prompt = `
-You are Luna, an energetic live Marble Race host.
 
-Event:
-${event}
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
 
-Rules:
-ONE sentence only.
-Maximum 14 words.
-Exciting.
-Friendly.
-Family safe.
-Natural English.
-Do not mention AI.
-No hashtags.
-`;
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are Luna, an energetic and friendly live Marble Race host. " +
+            "Always respond in natural English. " +
+            "One short sentence only. Maximum 14 words. " +
+            "Family friendly. Exciting. Never mention AI."
+        },
+        {
+          role: "user",
+          content: event
+        }
+      ],
 
-    const result = await model.generateContent(prompt);
+      temperature: 0.8,
+      max_tokens: 30
+    });
 
-    const text = result.response.text().trim();
+    const text =
+      completion.choices?.[0]?.message?.content?.trim();
 
-    if (text) return text;
+    if (text) {
+      console.log("LUNA:", text);
+      return text;
+    }
 
   } catch (error) {
-    console.log("Luna error:", error.message);
+
+    console.log(
+      "Luna/Groq error:",
+      error?.message || error
+    );
   }
 
   return fallbackComment();
@@ -650,7 +660,7 @@ server.listen(3000, () => {
   console.log("PORT: 3000");
   console.log(
     "LUNA:",
-    model ? "ONLINE" : "FALLBACK"
+    groq ? "GROQ ONLINE" : "FALLBACK"
   );
   console.log("==============================");
 
