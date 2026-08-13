@@ -90,6 +90,132 @@ function cleanName(name) {
     .substring(0, 16);
 }
 
+function wantsToJoin(text) {
+  if (!text) return false;
+
+  const t = text
+    .toLowerCase()
+    .normalize("NFKC")
+    .replace(/[!?.,;:()[\]{}"'`🔥🎮🏁❤️👍😂🤣]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  // Exact / very clear commands
+  const exact = [
+    "join",
+    "!join",
+    "ikut",
+    "gabung",
+    "join me",
+    "pick me",
+    "i'm in",
+    "im in",
+    "count me in",
+    "let me play",
+    "i want to play",
+    "can i play",
+    "i want to join",
+    "aku ikut",
+    "saya ikut",
+    "mau ikut",
+    "mau gabung",
+    "ikut dong",
+    "aku mau ikut",
+    "saya mau ikut",
+
+    // Spanish
+    "me uno",
+    "quiero jugar",
+    "quiero participar",
+    "yo también",
+
+    // Portuguese
+    "quero jogar",
+    "quero participar",
+    "eu também",
+
+    // French
+    "je participe",
+    "je veux jouer",
+    "moi aussi",
+
+    // German
+    "ich bin dabei",
+    "ich will spielen",
+    "ich auch",
+
+    // Vietnamese
+    "tham gia",
+    "cho toi choi",
+    "tôi cũng",
+
+    // Malay
+    "nak join",
+    "saya ikut",
+    "nak masuk",
+    "saya nak ikut",
+
+    // Filipino
+    "join ako",
+    "ako rin",
+
+    // Thai
+    "เข้าร่วม",
+    "ขอเล่น",
+    "เอาด้วย",
+    "อยากเล่น",
+    "ขอร่วมด้วย",
+
+    // Chinese
+    "参加",
+    "我要参加",
+    "我也要",
+    "我要玩",
+    "想参加",
+
+    // Japanese
+    "参加したい",
+    "参加する",
+    "やりたい",
+    "私も",
+
+    // Korean
+    "참여",
+    "저도요",
+    "같이요",
+    "참여하고 싶어요",
+
+    // Arabic
+    "أريد المشاركة",
+    "أريد أن ألعب",
+    "أنا أيضا",
+    "شارك",
+
+    // Russian
+    "я участвую",
+    "я тоже",
+    "хочу играть"
+  ];
+
+  if (exact.includes(t)) return true;
+
+  // Common phrases where the intent is very clear
+  const patterns = [
+    /\bi\s*(want|wanna)\s*(to\s*)?(join|play|race)\b/,
+    /\b(let|allow)\s+me\s+(to\s+)?(join|play|race)\b/,
+    /\bcount\s+me\s+in\b/,
+    /\bpick\s+me\b/,
+    /\bjoin\s+me\b/,
+    /\baku\s+(mau\s+)?(ikut|gabung|main)\b/,
+    /\bsaya\s+(mau\s+)?(ikut|gabung|main)\b/,
+    /参加.*比赛/,
+    /我要.*(参加|玩)/,
+    /أريد.*(المشاركة|ألعب)/
+  ];
+
+  return patterns.some(re => re.test(t));
+}
+
 function alreadyExists(name) {
   const lower = name.toLowerCase();
 
@@ -300,13 +426,7 @@ async function pollYouTubeChat(youtube, liveChatId, pageToken) {
 
       console.log(`[CHAT] ${author}: ${text}`);
 
-      const command = text.toLowerCase();
-
-      if (
-        command === "join" ||
-        command === "!join" ||
-        command.includes("join")
-      ) {
+      if (wantsToJoin(text)) {
         addViewerToQueue(author);
         continue;
       }

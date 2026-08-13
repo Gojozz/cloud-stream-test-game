@@ -349,3 +349,50 @@ body {
 .round {
     color: #ffd166;
 }
+
+/* =========================================================
+   NEXT RACERS
+========================================================= */
+
+.joiners {
+    width: 170px;
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 560px;
+    padding: 12px 9px;
+    border-radius: 18px;
+    border: 2px solid rgba(103,232,249,.25);
+    background: rgba(7,11,22,.94);
+    box-shadow: 0 0 18px rgba(0,229,255,.08);
+}
+
+.joiners-title {
+    text-align: center;
+    margin-bottom: 9px;
+    color: #67e8f9;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.joiners-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-height: 24px;
+    color: rgba(255,255,255,.65);
+    font-size: 11px;
+    font-weight: 800;
+    overflow: hidden;
+}
+
+.joiner {
+    display: block;
+    padding: 5px 6px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.055);
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
