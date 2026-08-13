@@ -476,32 +476,23 @@ function prepareNextPlayers() {
     return;
   }
 
-  const available =
-    MAX_PLAYERS - players.length;
+  const newcomers = waitingPlayers.splice(
+    0,
+    MAX_PLAYERS
+  );
 
-  if (available <= 0) {
-    return;
-  }
-
-  const newcomers =
-    waitingPlayers.splice(
-      0,
-      available
-    );
-
-  players.push(...newcomers);
+  players = newcomers;
 
   io.emit("playerUpdate", {
     players
   });
 
   io.emit("queueUpdate", {
-    waiting:
-      waitingPlayers.map(p => p.name)
+    waiting: waitingPlayers.map(p => p.name)
   });
 
   console.log(
-    "Players:",
+    "NEXT RACE PLAYERS:",
     players.map(p => p.name).join(", ")
   );
 }
