@@ -59,6 +59,10 @@ jobs:
 
           sleep 5
 
+          echo "=== SERVER LOG ==="
+          cat /tmp/server.log
+          echo "=== END SERVER LOG ==="
+
           curl -I http://127.0.0.1:3000/index.html
 
       - name: Start Chromium
