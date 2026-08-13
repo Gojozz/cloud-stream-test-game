@@ -422,18 +422,32 @@ async function startChatStream(
   liveChatId
 ) {
 
-  try {
+  let nextPageToken = null;
+  let stopped = false;
 
-    chatStream =
-      await youtube.liveChatMessages.streamList({
-        liveChatId,
-        part: "id,snippet,authorDetails"
-      });
+  console.log("YouTube Live Chat polling started.");
 
-    chatStream.on("data", response => {
+  async function pollChat() {
+
+    if (stopped) return;
+
+    try {
+
+      const response =
+        await youtube.liveChatMessages.list({
+          liveChatId,
+          part: "id,snippet,authorDetails",
+          maxResults: 200,
+          pageToken: nextPageToken || undefined
+        });
+
+      const data = response.data || {};
+
+      nextPageToken =
+        data.nextPageToken || nextPageToken;
 
       const messages =
-        response.data.items || [];
+        data.items || [];
 
       for (const message of messages) {
 
@@ -459,7 +473,6 @@ async function startChatStream(
           text.toLowerCase();
 
         /* JOIN */
-
         if (
           command === "join" ||
           command === "!join" ||
@@ -471,8 +484,7 @@ async function startChatStream(
           continue;
         }
 
-        /* Simple Luna response */
-
+        /* LUNA */
         if (
           command.includes("luna") ||
           command.includes("love") ||
@@ -489,54 +501,49 @@ async function startChatStream(
               speechText: response
             });
 
-          });
+          }).catch(error => {
 
+            console.log(
+              "Luna chat response error:",
+              error.message
+            );
+
+          });
         }
       }
 
-    });
+      const wait =
+        Math.max(
+          1000,
+          Number(
+            data.pollingIntervalMillis || 5000
+          )
+        );
 
-    chatStream.on("error", error => {
+      setTimeout(
+        pollChat,
+        wait
+      );
+
+    } catch (error) {
 
       console.log(
-        "YouTube chat stream error:",
+        "YouTube chat polling error:",
+        error.response?.data ||
         error.message
       );
 
       chatStarted = false;
+      stopped = true;
 
       setTimeout(
         startYouTubeChat,
         10000
       );
-
-    });
-
-    chatStream.on("end", () => {
-
-      console.log(
-        "YouTube chat stream ended."
-      );
-
-      chatStarted = false;
-
-      setTimeout(
-        startYouTubeChat,
-        5000
-      );
-
-    });
-
-  } catch (error) {
-
-    console.log(
-      "Chat stream failed:",
-      error.response?.data || error.message
-    );
-
-    chatStarted = false;
-
+    }
   }
+
+  pollChat();
 }
 
 /* =========================================================
