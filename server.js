@@ -281,7 +281,6 @@ async function startYouTubeChat() {
     const activeResponse =
       await youtube.liveBroadcasts.list({
         part: "id,snippet,status,contentDetails",
-        mine: true,
         broadcastStatus: "active",
         broadcastType: "all",
         maxResults: 50
@@ -326,6 +325,9 @@ async function startYouTubeChat() {
       const status =
         broadcast.status?.lifeCycleStatus;
 
+      const channelId =
+        broadcast.snippet?.channelId;
+
       const liveChatId =
         broadcast.snippet?.liveChatId;
 
@@ -334,6 +336,8 @@ async function startYouTubeChat() {
         broadcast.id,
         "| status:",
         status,
+        "| channel:",
+        channelId || "UNKNOWN",
         "| chat:",
         liveChatId ? "YES" : "NO",
         "| title:",
@@ -342,6 +346,7 @@ async function startYouTubeChat() {
 
       if (
         status === "live" &&
+        channelId === channel.id &&
         liveChatId
       ) {
         selected = broadcast;
