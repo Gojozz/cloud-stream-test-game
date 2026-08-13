@@ -431,6 +431,8 @@ async function pollYouTubeChat(youtube, liveChatId, pageToken) {
         continue;
       }
 
+      const command = text.toLowerCase();
+
       if (
         command.includes("luna") ||
         command.includes("hello") ||
