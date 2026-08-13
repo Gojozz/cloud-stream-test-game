@@ -245,33 +245,119 @@ async function startYouTubeChat() {
       auth
     });
 
-    console.log("Looking for active YouTube broadcast...");
+    console.log("================================");
+    console.log("YOUTUBE CHAT DIAGNOSTIC");
+    console.log("================================");
 
-    const response = await youtube.liveBroadcasts.list({
-      part: "id,snippet,status",
-      broadcastStatus: "active",
-      broadcastType: "all",
-      maxResults: 10
-    });
+    // Identify the channel belonging to this OAuth token
+    const channelResponse =
+      await youtube.channels.list({
+        part: "id,snippet",
+        mine: true
+      });
 
-    const broadcasts = response.data.items || [];
+    const channel =
+      channelResponse.data.items?.[0];
+
+    if (!channel) {
+      console.log("YouTube OAuth: NO CHANNEL FOUND");
+      setTimeout(startYouTubeChat, 15000);
+      return;
+    }
+
+    console.log(
+      "OAuth Channel:",
+      channel.snippet?.title
+    );
+
+    console.log(
+      "OAuth Channel ID:",
+      channel.id
+    );
+
+    // First: active broadcasts
+    console.log("Searching active broadcasts...");
+
+    const activeResponse =
+      await youtube.liveBroadcasts.list({
+        part: "id,snippet,status,contentDetails",
+        mine: true,
+        broadcastStatus: "active",
+        broadcastType: "all",
+        maxResults: 50
+      });
+
+    let broadcasts =
+      activeResponse.data.items || [];
 
     console.log(
       `Active broadcasts found: ${broadcasts.length}`
     );
 
-    // Find the first active broadcast that actually has Live Chat
-    const live = broadcasts.find(
-      b => b.snippet?.liveChatId
-    );
-
-    if (!live) {
+    // Fallback: recent/all broadcasts
+    if (!broadcasts.length) {
 
       console.log(
-        "No active broadcast with Live Chat yet. Retrying in 10 seconds..."
+        "No active broadcast. Searching recent broadcasts..."
       );
 
-      chatStarted = false;
+      const recentResponse =
+        await youtube.liveBroadcasts.list({
+          part: "id,snippet,status,contentDetails",
+          mine: true,
+          broadcastStatus: "all",
+          broadcastType: "all",
+          maxResults: 50
+        });
+
+      broadcasts =
+        recentResponse.data.items || [];
+
+      console.log(
+        `Broadcasts returned: ${broadcasts.length}`
+      );
+    }
+
+    // Find a live broadcast that has a Live Chat ID
+    let selected = null;
+
+    for (const broadcast of broadcasts) {
+
+      const status =
+        broadcast.status?.lifeCycleStatus;
+
+      const liveChatId =
+        broadcast.snippet?.liveChatId;
+
+      console.log(
+        "Broadcast:",
+        broadcast.id,
+        "| status:",
+        status,
+        "| chat:",
+        liveChatId ? "YES" : "NO",
+        "| title:",
+        broadcast.snippet?.title || ""
+      );
+
+      if (
+        status === "live" &&
+        liveChatId
+      ) {
+        selected = broadcast;
+        break;
+      }
+    }
+
+    if (!selected) {
+
+      console.log(
+        "No active broadcast with Live Chat found."
+      );
+
+      console.log(
+        "Retrying YouTube Chat in 10 seconds..."
+      );
 
       setTimeout(
         startYouTubeChat,
@@ -281,23 +367,22 @@ async function startYouTubeChat() {
       return;
     }
 
-    const liveChatId = live.snippet.liveChatId;
+    const liveChatId =
+      selected.snippet.liveChatId;
 
+    console.log("================================");
+    console.log("ACTIVE BROADCAST FOUND");
+    console.log("Broadcast ID:", selected.id);
     console.log(
-      `YouTube broadcast found: ${live.id}`
+      "Broadcast Title:",
+      selected.snippet?.title
     );
-
-    console.log(
-      `Live Chat ID found: ${liveChatId}`
-    );
-
-    console.log(
-      "YouTube Live Chat connected."
-    );
+    console.log("Live Chat ID:", liveChatId);
+    console.log("================================");
 
     chatStarted = true;
 
-    await startChatStream(
+    startChatStream(
       youtube,
       liveChatId
     );
@@ -305,8 +390,13 @@ async function startYouTubeChat() {
   } catch (error) {
 
     console.log(
-      "YouTube Chat error:",
-      error.response?.data || error.message
+      "YouTube Chat diagnostic error:"
+    );
+
+    console.log(
+      error.response?.data ||
+      error.message ||
+      error
     );
 
     chatStarted = false;
