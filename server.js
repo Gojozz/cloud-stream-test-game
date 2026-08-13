@@ -470,18 +470,25 @@ async function pollYouTubeChat(youtube, liveChatId, pageToken) {
    PREPARE NEXT RACE
 ========================================================= */
 
-function prepareNextPlayers() {
+function prepareNextPlayers(lastFinishedIndex) {
 
   if (!waitingPlayers.length) {
     return;
   }
 
-  const newcomers = waitingPlayers.splice(
-    0,
-    MAX_PLAYERS
-  );
+  const newcomer = waitingPlayers.shift();
 
-  players = newcomers;
+  if (!newcomer) {
+    return;
+  }
+
+  const replaced = players[lastFinishedIndex];
+
+  if (typeof lastFinishedIndex === "number" && replaced) {
+    players.splice(lastFinishedIndex, 1, newcomer);
+  } else {
+    players[players.length - 1] = newcomer;
+  }
 
   io.emit("playerUpdate", {
     players
@@ -492,14 +499,14 @@ function prepareNextPlayers() {
   });
 
   console.log(
-    "NEXT RACE PLAYERS:",
+    `PLAYER ROTATION: ${replaced?.name || "none"} -> ${newcomer.name}`
+  );
+
+  console.log(
+    "Players:",
     players.map(p => p.name).join(", ")
   );
 }
-
-/* =========================================================
-   RACE
-========================================================= */
 
 async function runRace() {
 
@@ -628,7 +635,7 @@ async function runRace() {
 
     if (waitingPlayers.length > 0) {
 
-      prepareNextPlayers();
+      prepareNextPlayers(finished[finished.length - 1]);
 
     }
 
