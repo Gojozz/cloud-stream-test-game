@@ -210,8 +210,8 @@ async function lunaComment(event, force = false) {
    YOUTUBE CHAT
 ========================================================= */
 
-async function startYouTubeChat() {
 
+async function startYouTubeChat() {
   if (chatStarted) return;
 
   const {
@@ -220,17 +220,12 @@ async function startYouTubeChat() {
     YOUTUBE_REFRESH_TOKEN
   } = process.env;
 
-  if (
-    !YOUTUBE_CLIENT_ID ||
-    !YOUTUBE_CLIENT_SECRET ||
-    !YOUTUBE_REFRESH_TOKEN
-  ) {
+  if (!YOUTUBE_CLIENT_ID || !YOUTUBE_CLIENT_SECRET || !YOUTUBE_REFRESH_TOKEN) {
     console.log("YouTube Chat: OAuth secrets missing");
     return;
   }
 
   try {
-
     const auth = new google.auth.OAuth2(
       YOUTUBE_CLIENT_ID,
       YOUTUBE_CLIENT_SECRET
@@ -245,305 +240,110 @@ async function startYouTubeChat() {
       auth
     });
 
-    console.log("================================");
-    console.log("YOUTUBE CHAT DIAGNOSTIC");
-    console.log("================================");
+    const r = await youtube.liveBroadcasts.list({
+      part: "id,snippet,status",
+      broadcastStatus: "active",
+      broadcastType: "all",
+      maxResults: 10
+    });
 
-    // Identify the channel belonging to this OAuth token
-    const channelResponse =
-      await youtube.channels.list({
-        part: "id,snippet",
-        mine: true
-      });
+    const live = (r.data.items || []).find(
+      b => b.snippet?.liveChatId
+    );
 
-    const channel =
-      channelResponse.data.items?.[0];
-
-    if (!channel) {
-      console.log("YouTube OAuth: NO CHANNEL FOUND");
-      setTimeout(startYouTubeChat, 15000);
+    if (!live) {
+      console.log("YouTube Chat: active broadcast/chat belum ditemukan");
+      setTimeout(startYouTubeChat, 10000);
       return;
     }
 
-    console.log(
-      "OAuth Channel:",
-      channel.snippet?.title
-    );
-
-    console.log(
-      "OAuth Channel ID:",
-      channel.id
-    );
-
-    // First: active broadcasts
-    console.log("Searching active broadcasts...");
-
-    const activeResponse =
-      await youtube.liveBroadcasts.list({
-        part: "id,snippet,status,contentDetails",
-        broadcastStatus: "active",
-        broadcastType: "all",
-        maxResults: 50
-      });
-
-    let broadcasts =
-      activeResponse.data.items || [];
-
-    console.log(
-      `Active broadcasts found: ${broadcasts.length}`
-    );
-
-    // Fallback: recent/all broadcasts
-    if (!broadcasts.length) {
-
-      console.log(
-        "No active broadcast. Searching recent broadcasts..."
-      );
-
-      const recentResponse =
-        await youtube.liveBroadcasts.list({
-          part: "id,snippet,status,contentDetails",
-          mine: true,
-          broadcastStatus: "all",
-          broadcastType: "all",
-          maxResults: 50
-        });
-
-      broadcasts =
-        recentResponse.data.items || [];
-
-      console.log(
-        `Broadcasts returned: ${broadcasts.length}`
-      );
-    }
-
-    // Find a live broadcast that has a Live Chat ID
-    let selected = null;
-
-    for (const broadcast of broadcasts) {
-
-      const status =
-        broadcast.status?.lifeCycleStatus;
-
-      const channelId =
-        broadcast.snippet?.channelId;
-
-      const liveChatId =
-        broadcast.snippet?.liveChatId;
-
-      console.log(
-        "Broadcast:",
-        broadcast.id,
-        "| status:",
-        status,
-        "| channel:",
-        channelId || "UNKNOWN",
-        "| chat:",
-        liveChatId ? "YES" : "NO",
-        "| title:",
-        broadcast.snippet?.title || ""
-      );
-
-      if (
-        status === "live" &&
-        channelId === channel.id &&
-        liveChatId
-      ) {
-        selected = broadcast;
-        break;
-      }
-    }
-
-    if (!selected) {
-
-      console.log(
-        "No active broadcast with Live Chat found."
-      );
-
-      console.log(
-        "Retrying YouTube Chat in 10 seconds..."
-      );
-
-      setTimeout(
-        startYouTubeChat,
-        10000
-      );
-
-      return;
-    }
-
-    const liveChatId =
-      selected.snippet.liveChatId;
+    const liveChatId = live.snippet.liveChatId;
 
     console.log("================================");
-    console.log("ACTIVE BROADCAST FOUND");
-    console.log("Broadcast ID:", selected.id);
-    console.log(
-      "Broadcast Title:",
-      selected.snippet?.title
-    );
+    console.log("YOUTUBE LIVE CHAT CONNECTED");
+    console.log("Broadcast:", live.snippet.title);
     console.log("Live Chat ID:", liveChatId);
     console.log("================================");
 
     chatStarted = true;
-
-    startChatStream(
-      youtube,
-      liveChatId
-    );
-
+    pollYouTubeChat(youtube, liveChatId, "");
   } catch (error) {
-
     console.log(
-      "YouTube Chat diagnostic error:"
-    );
-
-    console.log(
-      error.response?.data ||
-      error.message ||
-      error
+      "YouTube Chat error:",
+      error.response?.data || error.message
     );
 
     chatStarted = false;
-
-    setTimeout(
-      startYouTubeChat,
-      10000
-    );
+    setTimeout(startYouTubeChat, 10000);
   }
 }
 
-/* =========================================================
-   CHAT STREAM
-========================================================= */
+async function pollYouTubeChat(youtube, liveChatId, pageToken) {
+  try {
+    const r = await youtube.liveChatMessages.list({
+      liveChatId,
+      part: "id,snippet,authorDetails",
+      pageToken: pageToken || undefined,
+      maxResults: 200
+    });
 
-async function startChatStream(
-  youtube,
-  liveChatId
-) {
+    for (const m of r.data.items || []) {
+      const author = cleanName(
+        m.authorDetails?.displayName || "Viewer"
+      );
 
-  let nextPageToken = null;
-  let stopped = false;
+      const text = (
+        m.snippet?.displayMessage || ""
+      ).trim();
 
-  console.log("YouTube Live Chat polling started.");
+      if (!text) continue;
 
-  async function pollChat() {
+      console.log(`[CHAT] ${author}: ${text}`);
 
-    if (stopped) return;
+      const command = text.toLowerCase();
 
-    try {
-
-      const response =
-        await youtube.liveChatMessages.list({
-          liveChatId,
-          part: "id,snippet,authorDetails",
-          maxResults: 200,
-          pageToken: nextPageToken || undefined
-        });
-
-      const data = response.data || {};
-
-      nextPageToken =
-        data.nextPageToken || nextPageToken;
-
-      const messages =
-        data.items || [];
-
-      for (const message of messages) {
-
-        const author =
-          cleanName(
-            message.authorDetails?.displayName ||
-            "Viewer"
-          );
-
-        const text =
-          (
-            message.snippet?.displayMessage ||
-            ""
-          ).trim();
-
-        if (!text) continue;
-
-        console.log(
-          `[CHAT] ${author}: ${text}`
-        );
-
-        const command =
-          text.toLowerCase();
-
-        /* JOIN */
-        if (
-          command === "join" ||
-          command === "!join" ||
-          command.includes("join")
-        ) {
-
-          addViewerToQueue(author);
-
-          continue;
-        }
-
-        /* LUNA */
-        if (
-          command.includes("luna") ||
-          command.includes("love") ||
-          command.includes("hello") ||
-          command.includes("hi")
-        ) {
-
-          lunaComment(
-            `${author} says: "${text}". Respond warmly to this viewer.`,
-            true
-          ).then(response => {
-
-            io.emit("aiResponse", {
-              speechText: response
-            });
-
-          }).catch(error => {
-
-            console.log(
-              "Luna chat response error:",
-              error.message
-            );
-
-          });
-        }
+      if (
+        command === "join" ||
+        command === "!join" ||
+        command.includes("join")
+      ) {
+        addViewerToQueue(author);
+        continue;
       }
 
-      const wait =
-        Math.max(
-          1000,
-          Number(
-            data.pollingIntervalMillis || 5000
-          )
-        );
-
-      setTimeout(
-        pollChat,
-        wait
-      );
-
-    } catch (error) {
-
-      console.log(
-        "YouTube chat polling error:",
-        error.response?.data ||
-        error.message
-      );
-
-      chatStarted = false;
-      stopped = true;
-
-      setTimeout(
-        startYouTubeChat,
-        10000
-      );
+      if (
+        command.includes("luna") ||
+        command.includes("hello") ||
+        command.includes("hi") ||
+        command.includes("love")
+      ) {
+        lunaComment(
+          `${author} says: "${text}". Respond warmly to this viewer.`,
+          true
+        ).then(response => {
+          io.emit("aiResponse", {
+            speechText: response
+          });
+        });
+      }
     }
-  }
 
-  pollChat();
+    const nextToken = r.data.nextPageToken || "";
+
+    setTimeout(
+      () => pollYouTubeChat(youtube, liveChatId, nextToken),
+      3000
+    );
+
+  } catch (error) {
+    console.log(
+      "YouTube Chat polling error:",
+      error.response?.data || error.message
+    );
+
+    chatStarted = false;
+    setTimeout(startYouTubeChat, 10000);
+  }
 }
 
 /* =========================================================
