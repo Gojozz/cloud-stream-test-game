@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Marble Race Live</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Racing Live</title>
 <link rel="stylesheet" href="/style.css">
 </head>
 
@@ -11,93 +11,77 @@
 
 <header class="header">
     <div class="live">● LIVE</div>
-    <div class="title">MARBLE RACE</div>
-    <div class="subtitle" id="joinPrompt">🏁 WANT TO RACE? TYPE IN CHAT!</div>
+    <div class="title">RACING LIVE</div>
+    <div class="round">ROUND <b id="round">1</b></div>
 </header>
 
 <main class="main">
 
-    <section class="leaderboard">
-        <div class="lb-title">RANKING</div>
-
+    <!-- RANKING -->
+    <section class="panel ranking">
+        <div class="panel-title">RANKING</div>
         <div class="player" id="p1">
             <span class="dot red"></span>
             <span class="player-name">Rizal</span>
         </div>
-
         <div class="player" id="p2">
             <span class="dot cyan"></span>
             <span class="player-name">Budi</span>
         </div>
-
         <div class="player" id="p3">
             <span class="dot yellow"></span>
             <span class="player-name">Siti</span>
         </div>
-
         <div class="player" id="p4">
             <span class="dot green"></span>
             <span class="player-name">Agus</span>
         </div>
-
         <div class="player" id="p5">
             <span class="dot purple"></span>
             <span class="player-name">Dewi</span>
         </div>
     </section>
 
-    <section class="joiners" id="joiners">
-        <div class="joiners-title" id="nextRacersTitle">👥 NEXT RACERS</div>
-        <div class="joiners-list" id="joinersList">
-            Waiting for racers...
-        </div>
-    </section>
-
+    <!-- TRACK -->
     <section class="track" id="track">
-
-        <div class="start-line"></div>
-
         <div class="countdown">
             <span id="countdownText"></span>
         </div>
 
-        <div class="marble" id="m1">RIZ</div>
-        <div class="marble" id="m2">BUD</div>
-        <div class="marble" id="m3">SIT</div>
-        <div class="marble" id="m4">AGU</div>
-        <div class="marble" id="m5">DEW</div>
-
-        <div class="finish-label">FINISH</div>
-        <div class="finish"></div>
+        <div class="car" id="m1">RIZ</div>
+        <div class="car" id="m2">BUD</div>
+        <div class="car" id="m3">SIT</div>
+        <div class="car" id="m4">AGU</div>
+        <div class="car" id="m5">DEW</div>
 
         <div class="winner" id="winner">
             <div class="winner-small">🏆 WINNER</div>
             <div class="winner-name" id="winnerName">---</div>
         </div>
+    </section>
 
+    <!-- NEXT RACERS -->
+    <section class="panel joiners">
+        <div class="panel-title" id="nextRacersTitle">NEXT RACERS</div>
+        <div class="joiners-list" id="joinersList">
+            Waiting for racers...
+        </div>
     </section>
 
 </main>
 
 <section class="ai">
-    <div class="ai-top">
+    <div class="ai-left">
         <div class="ai-avatar">🤖</div>
-
         <div>
             <div class="ai-name">LUNA AI HOST</div>
-            <div class="ai-status">LIVE COMMENTARY • ONLINE</div>
+            <div class="ai-status">LIVE COMMENTARY</div>
         </div>
     </div>
-
     <div class="speech" id="aiSpeech">
-        Welcome to Marble Race Live!
+        Welcome to Racing Live! Type JOIN in chat to race!
     </div>
 </section>
-
-<footer class="footer">
-    <span>🔥 LIVE MARBLE BATTLE</span>
-    <span class="round">ROUND <b id="round">1</b></span>
-</footer>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/game.js"></script>

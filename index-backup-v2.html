@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Cloud Arcade Live — AI Chaos Arena</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050914;color:#fff;font-family:Arial,Helvetica,sans-serif}
+body{display:flex;align-items:center;justify-content:center}
+#app{position:relative;width:100vw;height:100vh;max-width:1280px;max-height:720px;overflow:hidden;background:
+radial-gradient(circle at 50% 45%,#15365d 0,#0b1b33 40%,#050914 100%)}
+canvas{position:absolute;inset:0;width:100%;height:100%}
+.hud{position:absolute;inset:0;pointer-events:none}
+.top{position:absolute;left:2.5%;right:2.5%;top:2.5%;display:flex;align-items:center;justify-content:space-between;gap:15px}
+.logo{font-weight:900;font-size:clamp(20px,3vw,36px);letter-spacing:2px;text-shadow:0 0 15px #35c9ff}
+.logo span{color:#39d5ff}.live{padding:10px 16px;border:1px solid #3e617d;border-radius:30px;background:#071525dd;box-shadow:0 0 20px #00b8ff33;font-weight:800}
+.dot{display:inline-block;width:10px;height:10px;background:#36ff82;border-radius:50%;box-shadow:0 0 12px #36ff82;margin-right:8px}
+.panel{position:absolute;background:rgba(5,13,28,.86);border:1px solid #31506d;border-radius:18px;box-shadow:0 8px 35px #0008,inset 0 0 20px #2bc8ff0d;backdrop-filter:blur(6px)}
+.scores{left:2.5%;top:16%;width:23%;padding:12px}
+.score{display:flex;align-items:center;gap:10px;padding:10px;margin:7px 0;border-radius:13px;background:#09182b;border:1px solid #24435c}
+.avatar{width:28px;height:28px;border-radius:50%;box-shadow:0 0 16px currentColor}
+.name{font-weight:900;flex:1}.pts{font-size:22px;font-weight:900}
+.chat{right:2.5%;top:16%;width:23%;padding:14px}
+.chat h3{margin:0 0 10px;color:#61e1ff;font-size:20px}.msg{padding:8px 9px;margin:7px 0;border-left:3px solid #38cfff;background:#0a1b2d;border-radius:8px;font-size:14px;line-height:1.25}
+.msg b{color:#fff}.tag{color:#58ddff;font-weight:800}
+.bottom{left:20%;right:20%;bottom:3%;padding:10px 18px;text-align:center;border-radius:16px}
+.event{font-weight:900;color:#ffd34d;letter-spacing:1px}.sub{font-size:12px;color:#9cb1c4;margin-top:4px}
+.center{position:absolute;left:50%;top:13%;transform:translateX(-50%);font-size:clamp(12px,1.6vw,20px);font-weight:900;letter-spacing:3px;color:#dff8ff;text-shadow:0 0 15px #28d8ff}
+.badge{position:absolute;left:50%;top:8%;transform:translateX(-50%);font-weight:900;color:#55e3ff;font-size:12px;letter-spacing:2px}
+.flash{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);font-size:clamp(24px,5vw,64px);font-weight:1000;color:#fff;text-shadow:0 0 25px #ffcc33;opacity:0;transition:.15s;white-space:nowrap}
+@media(max-aspect-ratio:1/1){.scores{width:45%;top:15%;}.chat{width:43%;top:15%}.bottom{left:8%;right:8%;bottom:2%}.center{top:8%}.badge{top:4%}}
+</style>
+</head>
+<body>
+<div id="app">
+<canvas id="game"></canvas>
+<div class="hud">
+  <div class="top"><div class="logo">CLOUD <span>ARCADE</span> LIVE</div><div class="live"><span class="dot"></span>AI CHAOS ARENA</div></div>
+  <div class="badge">⚡ COMMUNITY BATTLE • LIVE</div>
+  <div class="center">LAST EVENT: <span id="lastEvent">COIN RUSH</span></div>
+
+  <div class="panel scores">
+    <div class="score"><div class="avatar" style="color:#35cfff;background:#35cfff"></div><div class="name">BOLT</div><div class="pts" id="s0">000</div></div>
+    <div class="score"><div class="avatar" style="color:#ffd447;background:#ffd447"></div><div class="name">MOMO</div><div class="pts" id="s1">000</div></div>
+    <div class="score"><div class="avatar" style="color:#ff4d67;background:#ff4d67"></div><div class="name">ROCCO</div><div class="pts" id="s2">000</div></div>
+  </div>
+
+  <div class="panel chat">
+    <h3>💬 LIVE CHAT POWER</h3>
+    <div class="msg"><span class="tag">VIEWER:</span> GO BOLT!</div>
+    <div class="msg"><span class="tag">VIEWER:</span> ROCCO <b>ATTACK!</b></div>
+    <div class="msg"><span class="tag">VIEWER:</span> MOMO 🔥</div>
+    <div class="msg"><span class="tag">AI:</span> <b id="aiText">Chaos is rising...</b></div>
+  </div>
+
+  <div class="flash" id="flash">⚡ POWER HIT!</div>
+  <div class="panel bottom">
+    <div class="event">NEXT EVENT: <span id="event">SUPER SPIN</span> IN <span id="timer">12</span>s</div>
+    <div class="sub">Viewer commands change the battle • More viewers = more chaos</div>
+  </div>
+</div>
+</div>
+
+<script>
+const c=document.getElementById('game'),ctx=c.getContext('2d');
+let W=1280,H=720,dpr=1;
+function resize(){dpr=Math.min(devicePixelRatio||1,2);W=c.clientWidth* dpr;H=c.clientHeight*dpr;c.width=W;c.height=H;ctx.setTransform(dpr,0,0,dpr,0,0);W=c.clientWidth;H=c.clientHeight}
+addEventListener('resize',resize);resize();
+
+const colors=['#35cfff','#ffd447','#ff4d67'];
+const names=['BOLT','MOMO','ROCCO'];
+const p=[
+{x:.43,y:.62,vx:.0022,vy:-.0015,r:31,score:0,boost:0},
+{x:.51,y:.68,vx:-.0018,vy:-.0011,r:31,score:0,boost:0},
+{x:.59,y:.54,vx:.0012,vy:.0020,r:31,score:0,boost:0}
+];
+const coins=[];const sparks=[];
+function arena(){return {x:W*.31,y:H*.25,r:Math.min(H*.30,W*.22)}}
+function spawnCoin(){let a=Math.random()*Math.PI*2, rr=Math.sqrt(Math.random())*arena().r*.85;let A=arena();coins.push({x:A.x+Math.cos(a)*rr,y:A.y+Math.sin(a)*rr,r:7+Math.random()*4,life:1})}
+for(let i=0;i<22;i++)spawnCoin();
+
+function spark(x,y,col){for(let i=0;i<12;i++){let a=Math.random()*Math.PI*2,s=.002+Math.random()*.006;sparks.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,col})}}
+function drawBG(t){
+ ctx.fillStyle='#071124';ctx.fillRect(0,0,W,H);
+ for(let i=0;i<45;i++){let x=(i*97+(t*.01*(i%3+1)))%W,y=(i*53)%H;ctx.fillStyle='rgba(80,190,255,.22)';ctx.beginPath();ctx.arc(x,y,1+(i%3),0,7);ctx.fill()}
+ let A=arena();
+ let g=ctx.createRadialGradient(A.x,A.y,5,A.x,A.y,A.r*1.5);g.addColorStop(0,'#153b61');g.addColorStop(1,'#08122500');ctx.fillStyle=g;ctx.beginPath();ctx.arc(A.x,A.y,A.r*1.5,0,7);ctx.fill();
+ ctx.save();ctx.translate(A.x,A.y);ctx.rotate(t*.00005);
+ for(let i=0;i<12;i++){ctx.rotate(Math.PI/6);ctx.strokeStyle='rgba(63,174,224,.18)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(A.r,0);ctx.stroke()}
+ ctx.restore();
+ ctx.strokeStyle='#4ca7d4';ctx.lineWidth=6;ctx.shadowBlur=18;ctx.shadowColor='#28cfff';ctx.beginPath();ctx.arc(A.x,A.y,A.r,0,7);ctx.stroke();ctx.shadowBlur=0;
+}
+function loop(t){
+ drawBG(t);let A=arena();
+ // coins
+ coins.forEach((o,i)=>{o.life-=.0005;let pulse=1+Math.sin(t*.006+i)*.15;ctx.fillStyle='#ffd34d';ctx.shadowBlur=18;ctx.shadowColor='#ffd34d';ctx.beginPath();ctx.arc(o.x,o.y,o.r*pulse,0,7);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#fff3a0';ctx.beginPath();ctx.arc(o.x-2,o.y-2,2,0,7);ctx.fill()});
+ if(coins.length<25 && Math.random()<.035)spawnCoin();
+ p.forEach((q,i)=>{
+   let A=arena(),dx=q.x-A.x,dy=q.y-A.y,d=Math.hypot(dx,dy),lim=A.r-q.r-4;
+   if(d>lim){q.vx-=dx/d*.0008;q.vy-=dy/d*.0008}
+   let boost=1+q.boost*.8;q.x+=q.vx*boost*W;q.y+=q.vy*boost*H;
+   q.vx*=.996;q.vy*=.996;
+   if(Math.random()<.006){q.vx+=(Math.random()-.5)*.0015;q.vy+=(Math.random()-.5)*.0015}
+   coins.forEach((o,j)=>{if(Math.hypot(q.x-o.x,q.y-o.y)<q.r+o.r){q.score+=10; spark(o.x,o.y,colors[i]);coins.splice(j,1)}});
+   // character
+   ctx.shadowBlur=24;ctx.shadowColor=colors[i];ctx.fillStyle=colors[i];ctx.beginPath();ctx.arc(q.x,q.y,q.r,0,7);ctx.fill();ctx.shadowBlur=0;
+   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(q.x-10,q.y-5,7,0,7);ctx.arc(q.x+10,q.y-5,7,0,7);ctx.fill();
+   ctx.fillStyle='#071124';ctx.beginPath();ctx.arc(q.x-10,q.y-5,3,0,7);ctx.arc(q.x+10,q.y-5,3,0,7);ctx.fill();
+   ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(q.x,q.y+4,11,0,Math.PI);ctx.stroke();
+   ctx.font='900 13px Arial';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText(names[i],q.x,q.y+q.r+20);
+   q.boost*=.97;
+   document.getElementById('s'+i).textContent=String(q.score).padStart(3,'0');
+ });
+ // collisions
+ for(let i=0;i<3;i++)for(let j=i+1;j<3;j++){let a=p[i],b=p[j],d=Math.hypot(a.x-b.x,a.y-b.y);if(d<a.r+b.r){let nx=(b.x-a.x)/(d||1),ny=(b.y-a.y)/(d||1);a.vx-=nx*.0015;a.vy-=ny*.0015;b.vx+=nx*.0015;b.vy+=ny*.0015;spark((a.x+b.x)/2,(a.y+b.y)/2,colors[i]);}}
+ sparks.forEach((s,i)=>{s.x+=s.vx*W;s.y+=s.vy*H;s.life-=.025;ctx.globalAlpha=Math.max(0,s.life);ctx.fillStyle=s.col;ctx.beginPath();ctx.arc(s.x,s.y,3,0,7);ctx.fill();ctx.globalAlpha=1;if(s.life<=0)sparks.splice(i,1)});
+ requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+let timer=12,events=['SUPER SPIN','COIN RUSH','AI BRAWL','POWER STORM','JACKPOT DROP'];
+setInterval(()=>{timer--;document.getElementById('timer').textContent=timer;if(timer<=0){timer=12;let e=events[Math.floor(Math.random()*events.length)];document.getElementById('event').textContent=e;document.getElementById('lastEvent').textContent=e;p[Math.floor(Math.random()*3)].boost=.9;document.getElementById('flash').style.opacity=1;setTimeout(()=>document.getElementById('flash').style.opacity=0,700)}},1000);
+const ai=['BOLT is charging! ⚡','MOMO found a coin! 🪙','ROCCO wants REVENGE! 💥','SUPER SPIN incoming! 🌀','CHAT is causing chaos! 🔥'];
+setInterval(()=>document.getElementById('aiText').textContent=ai[Math.floor(Math.random()*ai.length)],2200);
+</script>
+</body>
+</html>
