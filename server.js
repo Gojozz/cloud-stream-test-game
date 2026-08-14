@@ -188,7 +188,7 @@ async function lunaComment(event, force = false) {
 }
 
 
-const { execFile } = require("child_process");
+const { spawn, execFile } = require("child_process");
 
 let lunaSpeechQueue = Promise.resolve();
 
@@ -204,43 +204,101 @@ function speakLuna(text) {
 
       const wavFile = `/tmp/luna-${Date.now()}.wav`;
 
-      execFile(
-        "espeak-ng",
+      console.log("LUNA TTS:", safeText);
+
+      // ======================================================
+      // PRIMARY TTS: Piper neural voice
+      // ======================================================
+
+      const piper = spawn(
+        "piper",
         [
-          "-v", "en-us+f3",
-          "-s", "155",
-          "-p", "65",
-          "-a", "170",
-          "-w", wavFile,
-          safeText
+          "--model", "en_US-lessac-medium",
+          "--output_file", wavFile
         ],
-        (error) => {
-          if (error) {
-            console.log("LUNA TTS error:", error.message);
-            resolve();
-            return;
+        {
+          env: {
+            ...process.env,
+            PULSE_SINK: "stream_sink"
           }
-
-          execFile(
-            "paplay",
-            [
-              "--device=stream_sink",
-              wavFile
-            ],
-            (playError) => {
-              if (playError) {
-                console.log("LUNA AUDIO error:", playError.message);
-              }
-
-              try {
-                require("fs").unlinkSync(wavFile);
-              } catch (_) {}
-
-              resolve();
-            }
-          );
         }
       );
+
+      let piperError = "";
+
+      piper.stderr.on("data", (data) => {
+        piperError += data.toString();
+      });
+
+      piper.stdin.write(safeText);
+      piper.stdin.end();
+
+      piper.on("error", (error) => {
+        console.log("PIPER unavailable:", error.message);
+        fallbackEspeak();
+      });
+
+      piper.on("close", (code) => {
+        if (code !== 0) {
+          console.log("PIPER failed:", piperError.trim());
+          fallbackEspeak();
+          return;
+        }
+
+        playAudio(wavFile);
+      });
+
+      // ======================================================
+      // FALLBACK: eSpeak
+      // ======================================================
+
+      function fallbackEspeak() {
+        execFile(
+          "espeak-ng",
+          [
+            "-v", "en-us+f3",
+            "-s", "155",
+            "-p", "65",
+            "-a", "170",
+            "-w", wavFile,
+            safeText
+          ],
+          (error) => {
+            if (error) {
+              console.log("LUNA FALLBACK TTS error:", error.message);
+              resolve();
+              return;
+            }
+
+            playAudio(wavFile);
+          }
+        );
+      }
+
+      // ======================================================
+      // PLAY AUDIO INTO PULSEAUDIO STREAM
+      // ======================================================
+
+      function playAudio(file) {
+        execFile(
+          "paplay",
+          [
+            "--device=stream_sink",
+            file
+          ],
+          (playError) => {
+            if (playError) {
+              console.log("LUNA AUDIO error:", playError.message);
+            }
+
+            try {
+              require("fs").unlinkSync(file);
+            } catch (_) {}
+
+            resolve();
+          }
+        );
+      }
     });
   });
 

@@ -34,6 +34,10 @@ jobs:
             pulseaudio \
             pulseaudio-utils \
             espeak-ng
+
+          python3 -m pip install --break-system-packages piper-tts
+          python3 -m piper.download_voices en_US-lessac-medium
+
           npm install
 
       - name: Start Xvfb
@@ -65,15 +69,12 @@ jobs:
           echo "===== AUDIO SOURCES ====="
           pactl list short sources
 
-      - name: Create LUNA Voice Test
+      - name: Verify Piper Voice
         run: |
-          espeak-ng \
-            -v en-us+f3 \
-            -s 155 \
-            -p 65 \
-            -a 170 \
-            -w /tmp/luna-test.wav \
-            "Welcome to Racing Live! Get ready for an exciting race!"
+          echo "Welcome to Racing Live! Get ready for an exciting race!" | \
+            piper \
+              --model en_US-lessac-medium \
+              --output_file /tmp/luna-test.wav
 
           ls -lh /tmp/luna-test.wav
 
