@@ -1,4 +1,4 @@
-name: Marble Race YouTube Shorts Live
+name: Racing Live YouTube
 
 on:
   workflow_dispatch:
@@ -8,11 +8,9 @@ on:
     - cron: "0 12 * * *"
 
 jobs:
-
   stream:
 
     runs-on: ubuntu-latest
-
     timeout-minutes: 60
 
     steps:
@@ -32,8 +30,10 @@ jobs:
             xvfb \
             chromium-browser \
             ffmpeg \
-            python3
-
+            python3 \
+            pulseaudio \
+            pulseaudio-utils \
+            espeak-ng
           npm install
 
       - name: Start Xvfb
@@ -48,6 +48,50 @@ jobs:
 
           sleep 3
 
+      - name: Start Audio
+        run: |
+          pulseaudio --start --exit-idle-time=-1
+          sleep 2
+
+          pactl load-module module-null-sink \
+            sink_name=stream_sink \
+            sink_properties=device.description=StreamSink
+
+          pactl set-default-sink stream_sink
+
+          echo "===== AUDIO SINKS ====="
+          pactl list short sinks
+
+          echo "===== AUDIO SOURCES ====="
+          pactl list short sources
+
+      - name: Create LUNA Voice Test
+        run: |
+          espeak-ng \
+            -v en-us+f3 \
+            -s 155 \
+            -p 65 \
+            -a 170 \
+            -w /tmp/luna-test.wav \
+            "Welcome to Racing Live! Get ready for an exciting race!"
+
+          ls -lh /tmp/luna-test.wav
+
+      - name: Start LUNA Voice Test
+        run: |
+          (
+            while true; do
+              paplay \
+                --device=stream_sink \
+                /tmp/luna-test.wav
+              sleep 8
+            done
+          ) >/tmp/audio.log 2>&1 &
+
+          sleep 3
+
+          echo "LUNA TEST VOICE STARTED"
+
       - name: Start Marble Server
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
@@ -56,14 +100,13 @@ jobs:
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
         run: |
           node server.js >/tmp/server.log 2>&1 &
-
           sleep 5
-
           curl -I http://127.0.0.1:3000/index.html
 
       - name: Start Chromium
         env:
           DISPLAY: :99
+          PULSE_SINK: stream_sink
         run: |
           chromium-browser \
             --no-sandbox \
@@ -97,7 +140,6 @@ jobs:
             -y /tmp/frame.png
 
           test -s /tmp/frame.png
-
           echo "DISPLAY OK"
 
       - name: Stream to YouTube
@@ -105,7 +147,6 @@ jobs:
           DISPLAY: :99
           STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
-
           test -n "$STREAM_KEY"
 
           ffmpeg \
@@ -116,8 +157,8 @@ jobs:
             -framerate 30 \
             -draw_mouse 0 \
             -i :99.0 \
-            -f lavfi \
-            -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+            -f pulse \
+            -i stream_sink.monitor \
             -c:v libx264 \
             -preset ultrafast \
             -tune zerolatency \
@@ -143,6 +184,9 @@ jobs:
         run: |
           echo "===== SERVER ====="
           tail -100 /tmp/server.log || true
+
+          echo "===== AUDIO ====="
+          tail -100 /tmp/audio.log || true
 
           echo "===== CHROMIUM ====="
           tail -100 /tmp/chromium.log || true
