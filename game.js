@@ -49,19 +49,39 @@ const cars = [
 // Waypoints (normalized 0-1) based on the new track layout
 // Adjusted for the clean single-loop track
 const WAYPOINTS = [
-    { x: 0.50, y: 0.78 }, // Start / Finish
-    { x: 0.38, y: 0.82 },
-    { x: 0.22, y: 0.75 },
-    { x: 0.15, y: 0.58 },
-    { x: 0.18, y: 0.38 },
-    { x: 0.28, y: 0.22 },
-    { x: 0.45, y: 0.15 },
-    { x: 0.62, y: 0.18 },
-    { x: 0.78, y: 0.28 },
-    { x: 0.85, y: 0.45 },
-    { x: 0.82, y: 0.62 },
-    { x: 0.70, y: 0.75 },
-    { x: 0.58, y: 0.80 }
+    { x: 0.50, y: 0.79 }, // START / FINISH
+
+    // Naik dari garis finish
+    { x: 0.50, y: 0.68 },
+    { x: 0.58, y: 0.57 },
+    { x: 0.69, y: 0.52 },
+
+    // Tikungan kanan
+    { x: 0.77, y: 0.43 },
+    { x: 0.76, y: 0.32 },
+    { x: 0.69, y: 0.23 },
+    { x: 0.58, y: 0.17 },
+
+    // Bagian atas
+    { x: 0.46, y: 0.16 },
+    { x: 0.36, y: 0.22 },
+
+    // Tikungan kiri atas
+    { x: 0.28, y: 0.32 },
+    { x: 0.19, y: 0.41 },
+    { x: 0.16, y: 0.54 },
+
+    // Turun dan kembali ke tengah
+    { x: 0.21, y: 0.64 },
+    { x: 0.31, y: 0.70 },
+    { x: 0.40, y: 0.70 },
+    { x: 0.46, y: 0.66 },
+
+    // Pendekatan terakhir menuju finish
+    { x: 0.49, y: 0.72 },
+
+    // FINISH
+    { x: 0.50, y: 0.79 }
 ];
 
 function getTrackSize() {
