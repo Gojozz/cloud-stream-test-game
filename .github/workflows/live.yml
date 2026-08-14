@@ -69,6 +69,25 @@ jobs:
           echo "===== AUDIO SOURCES ====="
           pactl list short sources
 
+      - name: Start Background Music
+        env:
+          PULSE_SINK: stream_sink
+        run: |
+          ffmpeg \
+            -hide_banner \
+            -loglevel warning \
+            -stream_loop -1 \
+            -i bgm.mp3 \
+            -filter:a "volume=0.20" \
+            -ar 44100 \
+            -ac 2 \
+            -f pulse \
+            stream_sink \
+            >/tmp/bgm.log 2>&1 &
+
+          sleep 2
+          echo "BACKGROUND MUSIC STARTED"
+
       - name: Verify Piper Voice
         run: |
           echo "Welcome to Racing Live! Get ready for an exciting race!" | \
