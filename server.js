@@ -213,7 +213,7 @@ function speakLuna(text) {
       const piper = spawn(
         "piper",
         [
-          "--model", "en_US-lessac-medium",
+          "--model", "en_US-amy-medium",
           "--output_file", wavFile
         ],
         {
