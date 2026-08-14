@@ -354,6 +354,33 @@ async function startYouTubeChat() {
   }
 }
 
+async function sendYouTubeChat(youtube, liveChatId, text) {
+  try {
+    const message = String(text || "").trim();
+    if (!message) return;
+
+    await youtube.liveChatMessages.insert({
+      part: "snippet",
+      requestBody: {
+        snippet: {
+          liveChatId,
+          type: "textMessageEvent",
+          textMessageDetails: {
+            messageText: message
+          }
+        }
+      }
+    });
+
+    console.log(`[LUNA CHAT] ${message}`);
+  } catch (error) {
+    console.log(
+      "LUNA YouTube Chat send error:",
+      error.response?.data || error.message
+    );
+  }
+}
+
 async function pollYouTubeChat(youtube, liveChatId, pageToken) {
   try {
     const r = await youtube.liveChatMessages.list({
@@ -368,6 +395,12 @@ async function pollYouTubeChat(youtube, liveChatId, pageToken) {
       const text = (m.snippet?.displayMessage || "").trim();
       if (!text) continue;
 
+      // Jangan biarkan LUNA membalas pesannya sendiri
+      if (m.authorDetails?.isChatOwner) {
+        console.log(`[CHAT] Ignored own message: ${author}: ${text}`);
+        continue;
+      }
+
       console.log(`[CHAT] ${author}: ${text}`);
 
       if (wantsToJoin(text)) {
@@ -376,11 +409,27 @@ async function pollYouTubeChat(youtube, liveChatId, pageToken) {
       }
 
       const command = text.toLowerCase();
-      if (command.includes("luna") || command.includes("hello") || command.includes("hi")) {
-        lunaComment(`\( {author} says: " \){text}". Respond warmly.`, true)
-          .then(response => {
-            io.emit("aiResponse", { speechText: response });
+      if (
+        command.includes("luna") ||
+        command.includes("hello") ||
+        command.includes("hi")
+      ) {
+        lunaComment(
+          `${author} says: "${text}". Respond warmly.`,
+          true
+        ).then(response => {
+          io.emit("aiResponse", {
+            speechText: response
           });
+
+          speakLuna(response);
+
+          sendYouTubeChat(
+            youtube,
+            liveChatId,
+            response
+          );
+        });
       }
     }
 
