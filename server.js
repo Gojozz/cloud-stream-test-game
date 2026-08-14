@@ -434,7 +434,22 @@ async function pollYouTubeChat(youtube, liveChatId, pageToken) {
     }
 
     const nextToken = r.data.nextPageToken || "";
-    setTimeout(() => pollYouTubeChat(youtube, liveChatId, nextToken), 3000);
+
+    // Ikuti interval polling yang direkomendasikan YouTube
+    // agar quota API tidak cepat habis.
+    const pollingInterval = Math.max(
+      Number(r.data.pollingIntervalMillis) || 5000,
+      1000
+    );
+
+    console.log(
+      `YouTube Chat: next poll in ${pollingInterval}ms`
+    );
+
+    setTimeout(
+      () => pollYouTubeChat(youtube, liveChatId, nextToken),
+      pollingInterval
+    );
   } catch (error) {
     console.log("YouTube Chat polling error:", error.response?.data || error.message);
     chatStarted = false;
