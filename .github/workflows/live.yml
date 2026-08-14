@@ -77,20 +77,6 @@ jobs:
 
           ls -lh /tmp/luna-test.wav
 
-      - name: Start LUNA Voice Test
-        run: |
-          (
-            while true; do
-              paplay \
-                --device=stream_sink \
-                /tmp/luna-test.wav
-              sleep 8
-            done
-          ) >/tmp/audio.log 2>&1 &
-
-          sleep 3
-
-          echo "LUNA TEST VOICE STARTED"
 
       - name: Start Marble Server
         env:
@@ -98,6 +84,7 @@ jobs:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          PULSE_SINK: stream_sink
         run: |
           node server.js >/tmp/server.log 2>&1 &
           sleep 5
@@ -106,7 +93,6 @@ jobs:
       - name: Start Chromium
         env:
           DISPLAY: :99
-          PULSE_SINK: stream_sink
         run: |
           chromium-browser \
             --no-sandbox \

@@ -187,6 +187,66 @@ async function lunaComment(event, force = false) {
   return fallbackComment();
 }
 
+
+const { execFile } = require("child_process");
+
+let lunaSpeechQueue = Promise.resolve();
+
+function speakLuna(text) {
+  lunaSpeechQueue = lunaSpeechQueue.then(() => {
+    return new Promise((resolve) => {
+      const safeText = String(text || "").trim();
+
+      if (!safeText) {
+        resolve();
+        return;
+      }
+
+      const wavFile = `/tmp/luna-${Date.now()}.wav`;
+
+      execFile(
+        "espeak-ng",
+        [
+          "-v", "en-us+f3",
+          "-s", "155",
+          "-p", "65",
+          "-a", "170",
+          "-w", wavFile,
+          safeText
+        ],
+        (error) => {
+          if (error) {
+            console.log("LUNA TTS error:", error.message);
+            resolve();
+            return;
+          }
+
+          execFile(
+            "paplay",
+            [
+              "--device=stream_sink",
+              wavFile
+            ],
+            (playError) => {
+              if (playError) {
+                console.log("LUNA AUDIO error:", playError.message);
+              }
+
+              try {
+                require("fs").unlinkSync(wavFile);
+              } catch (_) {}
+
+              resolve();
+            }
+          );
+        }
+      );
+    });
+  });
+
+  return lunaSpeechQueue;
+}
+
 /* =========================================================
    YOUTUBE CHAT
 ========================================================= */
@@ -353,6 +413,8 @@ async function runRace() {
               playerName: player.name,
               playerIndex: i
             });
+
+            speakLuna(text);
           }
         }
       }
@@ -371,6 +433,8 @@ async function runRace() {
       speechText: finalText,
       playerName: winner.name
     });
+
+    speakLuna(finalText);
 
     console.log(`Winner: ${winner.name}`);
     await sleep(4500);
