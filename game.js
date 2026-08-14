@@ -160,7 +160,10 @@ socket.on("aiResponse", data => {
         speech.innerText = data.speechText;
     }
     if (data.playerName && typeof data.playerIndex === "number" && cars[data.playerIndex]) {
-        cars[data.playerIndex].innerText = data.playerName.substring(0, 7).toUpperCase();
+        const nameLabel = cars[data.playerIndex].querySelector(".car-name");
+        if (nameLabel) {
+            nameLabel.innerText = data.playerName.substring(0, 7);
+        }
     }
 });
 
@@ -203,7 +206,10 @@ socket.on("playerUpdate", data => {
         if (element) element.innerText = player.name;
 
         if (cars[index]) {
-            cars[index].innerText = player.name.substring(0, 7).toUpperCase();
+            const nameLabel = cars[index].querySelector(".car-name");
+            if (nameLabel) {
+                nameLabel.innerText = player.name.substring(0, 7);
+            }
         }
     });
 });

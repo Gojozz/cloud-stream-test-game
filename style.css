@@ -132,38 +132,58 @@ html, body {
 /* CARS */
 .car {
     position: absolute;
-    width: 52px;
-    height: 28px;
-    border-radius: 6px 10px 8px 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-weight: 900;
-    color: white;
-    text-shadow: 0 1px 3px black;
-    border: 2px solid rgba(255,255,255,0.7);
-    box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+    width: 58px;
+    height: 58px;
+    display: block;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    color: transparent;
+    font-size: 0;
+    text-shadow: none;
     z-index: 10;
     transition: left 0.12s linear, top 0.12s linear, transform 0.12s linear;
 }
 
-.car::before {
-    content: "";
-    position: absolute;
-    top: 3px;
-    left: 8px;
-    right: 14px;
-    height: 8px;
-    background: rgba(255,255,255,0.25);
-    border-radius: 3px;
+#m1 {
+    background-image: url('/assets/cars/car1.png');
 }
 
-#m1 { background: #ff1744; }
-#m2 { background: #00bcd4; }
-#m3 { background: #e0a900; }
-#m4 { background: #20a85a; }
-#m5 { background: #8e44ff; }
+#m2 {
+    background-image: url('/assets/cars/car2.png');
+}
+
+#m3 {
+    background-image: url('/assets/cars/car3.png');
+}
+
+#m4 {
+    background-image: url('/assets/cars/car4.png');
+}
+
+#m5 {
+    background-image: url('/assets/cars/car5.png');
+}
+
+.car-name {
+    position: absolute;
+    left: 54px;
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    padding: 3px 7px;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.65);
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    pointer-events: none;
+}
 
 /* COUNTDOWN */
 .countdown {

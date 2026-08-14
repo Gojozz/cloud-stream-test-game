@@ -36,11 +36,11 @@ try {
 ========================================================= */
 
 const defaultPlayers = [
-  { name: "Rizal", color: "#ff1744" },
-  { name: "Budi", color: "#00e5ff" },
-  { name: "Siti", color: "#ffd166" },
-  { name: "Agus", color: "#2ecc71" },
-  { name: "Dewi", color: "#b86bff" }
+  { name: "Alex", color: "#ff1744" },
+  { name: "Liam", color: "#00e5ff" },
+  { name: "Emma", color: "#ffd166" },
+  { name: "Noah", color: "#2ecc71" },
+  { name: "Mia", color: "#b86bff" }
 ];
 
 const COLORS = [
